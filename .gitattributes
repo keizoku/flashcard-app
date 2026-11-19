@@ -1,0 +1,9 @@
+# 改行コード。Windows で clone しても、Linux（Docker のコンテナ）や sh で動くよう LF にそろえる
+* text=auto eol=lf
+# Windows のバッチファイルだけは CRLF でないと動かない
+*.cmd text eol=crlf
+*.bat text eol=crlf
+# 画像などは変換しない
+*.png binary
+*.jpg binary
+*.ico binary

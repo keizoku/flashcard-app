@@ -1,0 +1,83 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+      # テスト実行ツール（npm run test:ui）。テストを実行できるので、このパソコンからだけ開けるようにする
+      - "127.0.0.1:3100:3100"
+    environment:
+      DATABASE_URL: postgres://flashcard:flashcard@db:5432/flashcard
+      # Mac のファイル変更をコンテナ内で確実に検知するため
+      WATCHPACK_POLLING: "true"
+      # メールのリンクに使う、このアプリの URL
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      # メールの送り先。何も設定しなければ開発用の受信箱（Mailpit）に届き、外には送らない。
+      # 本物のメールを送るときは、.env に SMTP_HOST などを書く（.env.example を参照）
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-フラッシュカード <no-reply@flashcard.local>}
+    volumes:
+      - .:/app
+      # node_modules と .next はコンテナ内のものを使う（Mac 側と混ざらないように）
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: flashcard
+      POSTGRES_PASSWORD: flashcard
+      POSTGRES_DB: flashcard
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flashcard -d flashcard"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  # 開発用の受信箱。アプリが送ったメールを http://localhost:8025 で見られる（外には送らない）
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - "8025:8025"
+
+  # 画面のテスト（E2E）とテスト結果レポート。ふだんは起動しない（profile "e2e"）。
+  #   docker compose run --rm e2e                  … 単体テスト＋画面のテストを実行して、レポートを reports/ に作る
+  #   docker compose run --rm e2e npm run test:e2e … 画面のテストだけ
+  # ブラウザ（Chromium）入りの公式イメージ。中で、テスト用の DB（flashcard_e2e）につないだアプリを別に起動する
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.64.1-noble
+    profiles: ["e2e"]
+    working_dir: /app
+    init: true
+    ipc: host
+    environment:
+      DATABASE_URL: postgres://flashcard:flashcard@db:5432/flashcard
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      TZ: Asia/Tokyo
+    volumes:
+      - .:/app
+      # このコンテナ用（Linux 用）の node_modules と .next。app のものとは別にする
+      - e2e_node_modules:/app/node_modules
+      - /app/.next
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["sh", "tools/report/entry.sh"]
+    command: ["npm", "run", "test:report"]
+
+volumes:
+  db_data:
+  e2e_node_modules:

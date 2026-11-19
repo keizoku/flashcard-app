@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>フラッシュカード — 好きな動画で、英語をものにする</title>
+<!--
+  販売促進用のパンフレット（A4 横・4ページ、3分ほどで読める）。
+  PDF にする: docker compose run --rm e2e node promo/make-pdf.mjs → promo/flashcard-brochure.pdf
+  画面写真は promo/capture.mjs で撮る（見本のデータ）。
+  アプリを公開したら、PROMO_URL=https://… を付けて PDF を作ると、最後のページに URL が入る。
+-->
+<style>
+  @page { size: A4 landscape; margin: 0; }
+  :root {
+    --ink: #1d2230;
+    --muted: #5d6576;
+    --line: #e3e5ea;
+    --paper: #ffffff;
+    --soft: #f5f6f8;
+    --accent: #3b5bdb;
+    --accent-soft: #e8edfd;
+    --target: #d9480f;
+    --target-bg: #fff1c2;
+    --ok: #2f9e44;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Noto Sans CJK JP", "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;
+    color: var(--ink);
+    font-size: 10.5pt;
+    line-height: 1.75;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .page {
+    width: 297mm;
+    height: 210mm;
+    padding: 14mm 18mm 12mm;
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+    background: var(--paper);
+  }
+  .page:last-child { page-break-after: auto; }
+  h1, h2, h3, p { margin: 0; }
+  h2 { font-size: 20pt; line-height: 1.35; font-weight: 800; margin-bottom: 5mm; }
+  h3 { font-size: 12pt; font-weight: 800; margin-bottom: 1.5mm; }
+  .eyebrow { color: var(--accent); font-weight: 700; font-size: 9.5pt; letter-spacing: 0.06em; margin-bottom: 3mm; }
+  .muted { color: var(--muted); }
+  mark { background: var(--target-bg); color: var(--target); font-weight: 700; border-radius: 3px; padding: 0 2px; }
+  .hl { background: linear-gradient(transparent 60%, var(--target-bg) 60%); }
+  .folio {
+    position: absolute;
+    left: 18mm; right: 18mm; bottom: 6mm;
+    display: flex; justify-content: space-between;
+    font-size: 8pt; color: var(--muted);
+    border-top: 1px solid var(--line); padding-top: 2mm;
+  }
+
+  /* 写真の枠（ブラウザ風） */
+  .shot {
+    border: 1px solid var(--line);
+    border-radius: 3mm;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 3mm 8mm -4mm rgba(20, 30, 60, 0.35);
+  }
+  .shot .bar { height: 5mm; background: var(--soft); border-bottom: 1px solid var(--line); display: flex; gap: 1.4mm; align-items: center; padding-left: 3mm; }
+  .shot .bar i { width: 1.8mm; height: 1.8mm; border-radius: 50%; background: #cfd3db; display: block; }
+  .shot img { display: block; width: 100%; }
+  .caption { font-size: 8.5pt; color: var(--muted); margin-top: 2mm; }
+
+  /* 1ページ目 */
+  .cover { background: linear-gradient(160deg, #f3f5ff 0%, #ffffff 46%); }
+  .cover .brand { font-weight: 800; font-size: 11pt; display: flex; align-items: center; gap: 2.5mm; }
+  .cover .brand span { width: 7mm; height: 7mm; border-radius: 2mm; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 10pt; }
+  .cover-grid { display: grid; grid-template-columns: 1fr 128mm; gap: 10mm; align-items: center; height: 168mm; }
+  .cover h1 { font-size: 30pt; line-height: 1.34; font-weight: 800; margin: 0 0 7mm; letter-spacing: -0.01em; }
+  .cover .lead { font-size: 11.5pt; line-height: 1.85; }
+  .badges { display: flex; gap: 3mm; margin: 8mm 0 0; }
+  .badges div { border: 1.5px solid var(--accent); color: var(--accent); border-radius: 99px; padding: 1.5mm 5mm; font-weight: 700; font-size: 10pt; }
+  .cover .note3 { position: absolute; right: 18mm; top: 15mm; font-size: 9pt; color: var(--muted); }
+
+  /* 2ページ目 */
+  .pains { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5mm; margin-bottom: 5mm; }
+  .pain { background: var(--soft); border-radius: 3mm; padding: 3.5mm 4.5mm; }
+  .pain h3::before { content: "× "; color: var(--target); }
+  .pain p { font-size: 9.5pt; color: var(--muted); line-height: 1.65; }
+  .answer { font-size: 12.5pt; font-weight: 700; text-align: center; margin-bottom: 6mm; }
+  .answer b { color: var(--accent); }
+  .iplus { display: grid; grid-template-columns: 1fr 98mm; gap: 10mm; align-items: start; }
+  .formula { display: flex; align-items: center; gap: 2.5mm; margin: 3mm 0 4mm; font-weight: 800; font-size: 11pt; white-space: nowrap; }
+  .formula span { background: var(--accent-soft); color: var(--accent); border-radius: 2mm; padding: 1.5mm 3.5mm; }
+  .formula span.new { background: var(--target-bg); color: var(--target); }
+  .iplus p + p { margin-top: 2.5mm; }
+
+  /* 3ページ目 */
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5mm; margin-bottom: 7mm; }
+  .step { border: 1px solid var(--line); border-radius: 3mm; padding: 3.5mm 4mm; }
+  .step .n { width: 7mm; height: 7mm; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-weight: 800; margin-bottom: 2mm; }
+  .step p { font-size: 9pt; color: var(--muted); line-height: 1.6; }
+  .row2 { display: grid; grid-template-columns: 1fr 100mm; gap: 10mm; align-items: start; }
+  .timeline { display: flex; align-items: flex-end; gap: 1.6mm; margin: 4mm 0 3mm; }
+  .timeline div { flex: 1; text-align: center; font-size: 8pt; color: var(--muted); }
+  .timeline div b { display: block; background: var(--accent); border-radius: 1.5mm 1.5mm 0 0; margin-bottom: 1.5mm; }
+  .tip { background: var(--soft); border-radius: 3mm; padding: 3.5mm 4.5mm; font-size: 9.5pt; margin-top: 4mm; }
+
+  /* 4ページ目 */
+  .p4 { display: grid; grid-template-columns: 1fr 92mm; gap: 10mm; align-items: start; }
+  .features { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm 6mm; }
+  .feature { display: grid; grid-template-columns: 9mm 1fr; gap: 3mm; align-items: start; }
+  .feature .ic { width: 9mm; height: 9mm; border-radius: 2.5mm; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-weight: 800; font-size: 11pt; }
+  .feature p { font-size: 9pt; color: var(--muted); line-height: 1.6; }
+  .faq { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5mm; margin: 7mm 0 0; }
+  .faq div { border-top: 2px solid var(--accent); padding-top: 2.5mm; }
+  .faq p { font-size: 9pt; color: var(--muted); line-height: 1.6; }
+  .cta {
+    background: var(--accent);
+    color: #fff;
+    border-radius: 4mm;
+    padding: 5.5mm 6mm;
+    margin-top: 5mm;
+    display: grid;
+    gap: 3.5mm;
+  }
+  .cta h2 { color: #fff; font-size: 15pt; margin-bottom: 1.5mm; }
+  .cta p { font-size: 9.5pt; opacity: 0.92; line-height: 1.6; }
+  .cta .go { justify-self: start; }
+  .cta .go { background: #fff; color: var(--accent); border-radius: 99px; padding: 3mm 7mm; font-weight: 800; font-size: 12pt; white-space: nowrap; text-align: center; }
+  .cta .url { display: block; font-size: 8.5pt; font-weight: 400; margin-top: 1mm; }
+</style>
+</head>
+<body>
+
+<!-- 1 -->
+<section class="page cover">
+  <div class="brand"><span>F</span>フラッシュカード</div>
+  <div class="cover-grid">
+    <div>
+      <h1>好きな動画が、<br>そのまま、<br><span class="hl">あなたの英語の<br>教科書</span>になる。</h1>
+      <p class="lead">
+        YouTube の字幕を貼るだけで、あなたのレベルにちょうどいい
+        <b>「知らない単語がひとつだけ」</b>の文を見つけて、暗記カードにします。
+        あとは毎日、出てきたカードに答えるだけ。忘れるころに、もう一度出てきます。
+      </p>
+      <div class="badges"><div>無料</div><div>1日10分から</div><div>好きな動画で学べる</div></div>
+    </div>
+    <div>
+      <div class="shot"><div class="bar"><i></i><i></i><i></i></div><img src="images/study.png" alt="学習の画面"></div>
+      <p class="caption">学習の画面。例文・和訳・意味・例文の読み上げまで、1枚のカードに。</p>
+    </div>
+  </div>
+  <p class="note3">このパンフレットは、3分ほどで読めます。</p>
+</section>
+
+<!-- 2 -->
+<section class="page">
+  <p class="eyebrow">なぜ、英語は身につかないのか</p>
+  <h2>がんばっているのに、こんなふうに止まっていませんか？</h2>
+  <div class="pains">
+    <div class="pain"><h3>単語帳が続かない</h3><p>単語だけを並べて覚えても、どう使うのかわからない。おもしろくないから、続かない。</p></div>
+    <div class="pain"><h3>教材が難しすぎる</h3><p>知らない単語だらけの文は、辞書を引くだけで疲れてしまい、内容が頭に入らない。</p></div>
+    <div class="pain"><h3>覚えても忘れる</h3><p>いつ復習すればいいかわからない。せっかく覚えた単語が、少しずつ抜けていく。</p></div>
+  </div>
+  <p class="answer">フラッシュカードは、この3つを<b>「しくみ」で</b>解決します。</p>
+
+  <div class="iplus">
+    <div>
+      <p class="eyebrow">いちばんの特長</p>
+      <h3 style="font-size:15pt;line-height:1.45">「わかる文 ＋ 新しい単語 1つ」だけを選ぶ</h3>
+      <div class="formula"><span>わかる単語</span>＋<span class="new">新しい単語 1つ</span>＝<span>覚えやすい文</span></div>
+      <p>
+        ほとんどわかる文の中に、知らない単語がひとつだけ。言語学習で「i+1」と呼ばれる、
+        無理なく身につく難しさです。
+      </p>
+      <p>
+        英検（3級〜1級）や TOEIC の点数からあなたのレベルを決め、字幕の中から
+        そんな文だけを自動で選びます。知らない単語が2つ・3つの文は「i+2」「i+3」として、
+        力がついてから挑戦できます。
+      </p>
+      <p>
+        文ごと覚えるので、単語の意味だけでなく、使い方や場面も一緒に残ります。
+        好きな動画の中の文だから、思い出すきっかけも多くなります。
+      </p>
+    </div>
+    <div>
+      <div class="shot"><div class="bar"><i></i><i></i><i></i></div><img src="images/import.png" alt="字幕から文を選ぶ画面"></div>
+      <p class="caption">字幕を解析した画面。「i+1」に、知らない単語がひとつだけの文が並びます。単語の頻出度もわかり、知っている単語は「知ってる」で外せます。</p>
+    </div>
+  </div>
+  <div class="folio"><span>フラッシュカード — 好きな動画で、英語をものにする</span><span>2</span></div>
+</section>
+
+<!-- 3 -->
+<section class="page">
+  <p class="eyebrow">使い方</p>
+  <h2>はじめ方は、4ステップだけ。</h2>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><h3>レベルを選ぶ</h3><p>英検の級か TOEIC の点数を選ぶと、「知っている単語」の目安が決まります。</p></div>
+    <div class="step"><div class="n">2</div><h3>動画を選んで、字幕を貼る</h3><p>好きな動画か、アプリの「動画を探す」で見つけた動画の「文字起こし」をコピーして貼るだけ。</p></div>
+    <div class="step"><div class="n">3</div><h3>文を選ぶ</h3><p>並んだ候補から覚えたい文をチェックして、カードに登録します。</p></div>
+    <div class="step"><div class="n">4</div><h3>毎日答える</h3><p>「覚えている / 覚えていない」を押すだけ。次に出す日はアプリが決めます。</p></div>
+  </div>
+
+  <div class="row2">
+    <div>
+      <h3 style="font-size:14pt">忘れるころに、もう一度。</h3>
+      <p>
+        「覚えている」を押すたびに、次に出すまでの間隔が延びていきます。
+        「覚えていない」を押したカードは、その日のうちにもう一度。
+      </p>
+      <div class="timeline" aria-label="次に出すまでの間隔">
+        <div><b style="height:4mm"></b>1日後</div>
+        <div><b style="height:7mm"></b>3日後</div>
+        <div><b style="height:11mm"></b>1週間後</div>
+        <div><b style="height:15mm"></b>2週間後</div>
+        <div><b style="height:20mm"></b>1か月後</div>
+        <div><b style="height:26mm"></b>2か月後</div>
+      </div>
+      <p class="muted" style="font-size:9pt">日付の切り替わりは毎朝4時。夜に学習しても、翌朝にはちゃんと出てきます。</p>
+      <div class="tip">
+        <b>動画の「理解度」が上がっていく</b><br>
+        字幕のうち、全部わかる文が何％あるかを、デッキごとに表示します。
+        単語を覚えるほど数字が上がり、100％でその動画はクリア。
+        「あの動画が、字幕なしでわかるようになる」が、目に見える目標になります。
+      </div>
+    </div>
+    <div>
+      <div class="shot"><div class="bar"><i></i><i></i><i></i></div><img src="images/top.png" alt="デッキの一覧"></div>
+      <p class="caption">デッキの一覧。動画ごとの理解度と、今日答えるカードの枚数がひと目でわかります。</p>
+    </div>
+  </div>
+  <div class="folio"><span>フラッシュカード — 好きな動画で、英語をものにする</span><span>3</span></div>
+</section>
+
+<!-- 4 -->
+<section class="page">
+  <p class="eyebrow">続けるための工夫</p>
+  <h2>「今日も、ちょっとだけやろう」が続く。</h2>
+  <div class="p4">
+   <div>
+    <div class="features">
+      <div class="feature"><div class="ic">探</div><div><h3>レベルに合う動画がわかる</h3><p>みんなが学んだ動画を、あなたの理解度で「ちょうどいい」順におすすめ。その場で再生して、すぐデッキに。</p></div></div>
+      <div class="feature"><div class="ic">訳</div><div><h3>和訳と解説も、無料で</h3><p>お手持ちのチャット AI に頼む文章をボタン1つでコピー。答えを貼れば、和訳・意味・例文・豆知識がカードに入ります。</p></div></div>
+      <div class="feature"><div class="ic">♪</div><div><h3>耳でも覚える</h3><p>例文を、ふつうの速さとゆっくりで読み上げ。カードが出たら自動で読む設定も。</p></div></div>
+      <div class="feature"><div class="ic">話</div><div><h3>覚えた単語で物語を作る</h3><p>覚えた単語を使った短い物語を AI に書いてもらい、まとめて読み返せます。</p></div></div>
+      <div class="feature"><div class="ic">⇄</div><div><h3>みんなのデッキ</h3><p>ほかの人が公開したデッキを、そのまま自分のデッキとして取り込めます。</p></div></div>
+      <div class="feature"><div class="ic">⌨</div><div><h3>矢印キーだけで進む</h3><p>パソコンなら → で答え、→ / ← で「覚えている / 覚えていない」。手を止めずに進めます。</p></div></div>
+    </div>
+
+  <div class="faq">
+    <div><h3>本当に無料？</h3><p>はい。和訳や解説は、あなたが使っているチャット AI に頼む方式なので、アプリ側で料金はかかりません。</p></div>
+    <div><h3>どのレベルから？</h3><p>英検3級（中学卒業程度）から。レベルはあとから変えられ、知らない単語の判定も変わります。</p></div>
+    <div><h3>スマホでも使える？</h3><p>ブラウザで動くので、スマートフォンでもパソコンでも。字幕の貼り付けはパソコンが楽です。</p></div>
+  </div>
+   </div>
+   <div>
+      <div class="shot"><div class="bar"><i></i><i></i><i></i></div><img src="images/stats.png" alt="統計の画面"></div>
+      <p class="caption">統計の画面。覚えた単語の数、デッキ別の進み具合、日ごとの学習回数、苦手な単語がわかります。</p>
+
+  <div class="cta">
+    <div>
+      <h2>次に見る動画から、始めよう。</h2>
+      <p>登録はメールアドレスだけ、1分で終わります。<br>最初の1枚を作るまで、5分もかかりません。</p>
+    </div>
+    <div class="go">無料で始める<span class="url">APP_URL</span></div>
+  </div>
+   </div>
+  </div>
+  <div class="folio"><span>フラッシュカード — 好きな動画で、英語をものにする</span><span>4</span></div>
+</section>
+
+</body>
+</html>

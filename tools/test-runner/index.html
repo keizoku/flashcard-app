@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>単体テスト実行ツール</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --surface: #ffffff; --surface-2: #f0f2f5; --border: #dde1e6;
+    --text: #1d2329; --text-2: #4b5560; --muted: #7a848e;
+    --accent: #2f6fde; --accent-text: #ffffff;
+    --pass: #1f8a4c; --pass-bg: #e3f4ea; --fail: #c62f2f; --fail-bg: #fbe6e6;
+    --idle: #6b7580; --idle-bg: #eceff2; --none: #8a6d1f; --none-bg: #f8f0d9;
+    --code-bg: #eef1f4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15181c; --surface: #1d2126; --surface-2: #252a30; --border: #343a42;
+      --text: #e6e9ec; --text-2: #b5bcc4; --muted: #8a939c;
+      --accent: #5b8ff0; --accent-text: #0d1117;
+      --pass: #5cc98a; --pass-bg: #1d3327; --fail: #f07a7a; --fail-bg: #3a2122;
+      --idle: #9aa3ad; --idle-bg: #2a2f35; --none: #e0c06a; --none-bg: #36301d;
+      --code-bg: #2a2f35;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.6 -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif; }
+  header { position: sticky; top: 0; z-index: 10; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .bar { max-width: 1200px; margin: 0 auto; padding: 12px 16px; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+  h1 { font-size: 17px; margin: 0; margin-right: auto; }
+  .summary { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .pill.pass { background: var(--pass-bg); color: var(--pass); }
+  .pill.fail { background: var(--fail-bg); color: var(--fail); }
+  .pill.idle { background: var(--idle-bg); color: var(--idle); }
+  .pill.none { background: var(--none-bg); color: var(--none); }
+  .controls { max-width: 1200px; margin: 0 auto; padding: 0 16px 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  button { font: inherit; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 6px; padding: 5px 12px; cursor: pointer; white-space: nowrap; }
+  button:hover:not(:disabled) { background: var(--surface-2); }
+  button:disabled { opacity: .5; cursor: default; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+  button.primary:hover:not(:disabled) { filter: brightness(1.08); background: var(--accent); }
+  button.small { padding: 2px 10px; font-size: 12px; }
+  input[type=search] { font: inherit; padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); min-width: 220px; flex: 1 1 220px; max-width: 360px; }
+  .filters { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .filters button { border: 0; border-radius: 0; border-right: 1px solid var(--border); }
+  .filters button:last-child { border-right: 0; }
+  .filters button[aria-pressed=true] { background: var(--surface-2); font-weight: 700; }
+  .status-line { color: var(--muted); font-size: 12px; margin-left: auto; }
+  main { max-width: 1200px; margin: 0 auto; padding: 16px; }
+  .banner { border: 1px solid var(--fail); background: var(--fail-bg); color: var(--text); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; }
+  .banner pre { white-space: pre-wrap; margin: 6px 0 0; font-size: 12px; max-height: 260px; overflow: auto; }
+  details.section { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 12px; }
+  details.section > summary { list-style: none; cursor: pointer; padding: 10px 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  details.section > summary::-webkit-details-marker { display: none; }
+  details.section > summary::before { content: "▸"; color: var(--muted); transition: transform .15s; }
+  details.section[open] > summary::before { transform: rotate(90deg); }
+  .sec-title { font-weight: 700; font-size: 15px; }
+  .sec-counts { display: flex; gap: 6px; margin-left: auto; }
+  .sec-body { padding: 0 14px 12px; }
+  h3 { font-size: 13px; color: var(--text-2); margin: 14px 0 6px; }
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { border-bottom: 1px solid var(--border); padding: 6px 8px; text-align: left; vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; white-space: nowrap; }
+  tr.row-failed td { background: var(--fail-bg); }
+  td.result { white-space: nowrap; width: 1%; }
+  td.ids { white-space: nowrap; width: 1%; }
+  code { background: var(--code-bg); padding: 0 4px; border-radius: 4px; font-size: 12px; }
+  .chip { font: 600 12px ui-monospace, SFMono-Regular, Menlo, monospace; padding: 1px 7px; border-radius: 5px; border: 1px solid transparent; cursor: pointer; margin: 0 2px 2px 0; display: inline-block; }
+  .chip.passed { background: var(--pass-bg); color: var(--pass); }
+  .chip.failed { background: var(--fail-bg); color: var(--fail); }
+  .chip.idle { background: var(--idle-bg); color: var(--idle); }
+  .chip.running { background: var(--idle-bg); color: var(--accent); border-color: var(--accent); }
+  .untested { color: var(--none); font-weight: 600; font-size: 12px; }
+  .chip.e2e { background: transparent; color: var(--muted); border: 1px dashed var(--border); }
+  .e2e-note { color: var(--muted); font-size: 12px; }
+  tr.detail td { background: var(--surface-2); }
+  .detail-box { font-size: 12px; }
+  .detail-box .file { color: var(--muted); }
+  .detail-box ul { margin: 4px 0; padding-left: 18px; }
+  .detail-box li { margin: 2px 0; }
+  .detail-box pre { white-space: pre-wrap; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px; margin: 4px 0 8px; max-height: 300px; overflow: auto; font-size: 12px; }
+  .mark { font-weight: 700; }
+  .mark.passed { color: var(--pass); } .mark.failed { color: var(--fail); } .mark.idle { color: var(--idle); }
+  .muted { color: var(--muted); }
+  .empty { color: var(--muted); padding: 40px 0; text-align: center; }
+  @media (max-width: 640px) { .status-line { margin-left: 0; width: 100%; } h1 { width: 100%; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <h1>単体テスト実行ツール</h1>
+    <div class="summary" id="summary" aria-live="polite"></div>
+  </div>
+  <div class="controls">
+    <button class="primary" id="run-all">全部実行</button>
+    <button id="run-visible">表示中を実行</button>
+    <button id="run-failed" disabled>失敗を再実行</button>
+    <input type="search" id="search" placeholder="ID・条件・期待する結果で絞り込む" aria-label="絞り込み">
+    <div class="filters" role="group" aria-label="結果で絞り込む">
+      <button data-filter="all" aria-pressed="true">すべて</button>
+      <button data-filter="failed" aria-pressed="false">失敗</button>
+      <button data-filter="passed" aria-pressed="false">成功</button>
+      <button data-filter="idle" aria-pressed="false">未実行</button>
+      <button data-filter="untested" aria-pressed="false">未テスト</button>
+    </div>
+    <span class="status-line" id="status-line">読み込み中…</span>
+  </div>
+</header>
+<main>
+  <div id="banner"></div>
+  <div id="sections"></div>
+</main>
+<script>
+// テスト仕様書（docs/test-spec.md）を表にして、ID ごとにテストを実行する。
+// 結果はこのブラウザに保存しておく（次に開いたときも見られる）
+const STORE_KEY = "flashcard-test-runner";
+const state = { spec: null, titles: {}, e2e: {}, results: {}, running: new Set(), filter: "all", query: "", open: new Set() };
+
+try {
+  const saved = JSON.parse(localStorage.getItem(STORE_KEY) || "{}");
+  state.results = saved.results || {};
+  state.lastRun = saved.lastRun || null;
+} catch {}
+const save = () => {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify({ results: state.results, lastRun: state.lastRun })); } catch {}
+};
+
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+// 表の中の Markdown（`コード`、**太字**、[リンク](…)）を読みやすくする
+const md = (s) => esc(s)
+  .replace(/`([^`]+)`/g, "<code>$1</code>")
+  .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+  .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+
+// 画面のテスト（E2E）の ID は、このツールでは実行しない（docker compose run --rm e2e で実行する）
+const isE2e = (id) => Boolean(state.e2e[id]);
+const unitIds = (ids) => ids.filter((id) => !isE2e(id));
+const idStatus = (id) => isE2e(id) ? "e2e" : state.running.has(id) ? "running" : state.results[id]?.status || "idle";
+function rowStatus(row) {
+  if (row.untested) return "untested";
+  if (row.ids.length > 0 && unitIds(row.ids).length === 0) return "e2e";
+  const st = unitIds(row.ids).map(idStatus);
+  if (st.includes("running")) return "running";
+  if (st.includes("failed")) return "failed";
+  if (st.every((s) => s === "passed")) return "passed";
+  return "idle";
+}
+const allIds = () => Object.keys(state.titles).sort();
+const rowsOf = (sec) => sec.tables.flatMap((t) => t.rows);
+
+function matches(row) {
+  const st = rowStatus(row);
+  if (state.filter !== "all") {
+    if (state.filter === "idle" ? !(st === "idle" || st === "running") : st !== state.filter) return false;
+  }
+  if (!state.query) return true;
+  const q = state.query.toLowerCase();
+  const names = row.ids.flatMap((id) => (state.titles[id] || state.e2e[id])?.names || []);
+  return [...row.cells, ...names].join(" ").toLowerCase().includes(q);
+}
+
+function renderSummary() {
+  const ids = allIds();
+  const count = (s) => ids.filter((id) => idStatus(id) === s).length;
+  const untested = (state.spec?.sections || []).flatMap(rowsOf).filter((r) => r.untested).length;
+  $("#summary").innerHTML = `
+    <span class="pill pass">✓ 成功 ${count("passed")}</span>
+    <span class="pill fail">✗ 失敗 ${count("failed")}</span>
+    <span class="pill idle">未実行 ${ids.length - count("passed") - count("failed")}</span>
+    <span class="pill none" title="テスト仕様書で「未」の条件">未テストの条件 ${untested}</span>`;
+  $("#run-failed").disabled = count("failed") === 0 || state.running.size > 0;
+  for (const b of ["#run-all", "#run-visible"]) $(b).disabled = state.running.size > 0;
+}
+
+function detailHtml(row) {
+  return row.ids.map((id) => {
+    const r = state.results[id];
+    const t = state.titles[id];
+    const tests = r?.tests?.length
+      ? r.tests.map((x) => `<li><span class="mark ${x.status}">${x.status === "passed" ? "✓" : "✗"}</span> ${esc(x.title)} <span class="muted">${x.duration}ms</span>
+          ${x.failures.map((f) => `<pre>${esc(f)}</pre>`).join("")}</li>`).join("")
+      : (t?.names || []).map((n) => `<li><span class="mark idle">・</span> ${esc(id)} ${esc(n)}</li>`).join("");
+    const when = r?.at ? ` · ${new Date(r.at).toLocaleString("ja-JP")} に実行` : " · まだ実行していません";
+    return `<div><strong>${esc(id)}</strong> <span class="file">${esc(t?.file || "")}${when}</span>
+      <button class="small" data-run="${esc(id)}">${esc(id)} を実行</button><ul>${tests}</ul></div>`;
+  }).join("");
+}
+
+function renderSections() {
+  if (!state.spec) return;
+  const html = state.spec.sections.map((sec, si) => {
+    const rows = rowsOf(sec);
+    const visible = rows.filter(matches);
+    if (visible.length === 0) return "";
+    const st = rows.map(rowStatus);
+    const n = (s) => st.filter((x) => x === s).length;
+    const secIds = unitIds([...new Set(rows.flatMap((r) => r.ids))]);
+    const tables = sec.tables.map((t, ti) => {
+      const trs = t.rows.map((row, ri) => {
+        if (!matches(row)) return "";
+        const key = `${si}-${ti}-${ri}`;
+        const status = rowStatus(row);
+        const cells = row.cells.slice(0, -1).map((c) => `<td>${md(c)}</td>`).join("");
+        const idCell = row.untested
+          ? `<span class="untested">未テスト</span>`
+          : row.ids.map((id) => `<span class="chip ${idStatus(id)}" data-toggle="${key}" title="${esc(((state.titles[id] || state.e2e[id])?.names || []).join(" / "))}">${esc(id)}</span>`).join("");
+        const label = { passed: "✓ 成功", failed: "✗ 失敗", running: "実行中…", idle: "", untested: "", e2e: "" }[status];
+        const runIds = unitIds(row.ids);
+        const action = row.untested
+          ? ""
+          : runIds.length === 0
+            ? `<span class="e2e-note" title="docker compose run --rm e2e で実行します">画面のテスト（E2E）</span>`
+            : `<button class="small" data-run="${esc(runIds.join(","))}" ${state.running.size ? "disabled" : ""}>実行</button>`;
+        const open = state.open.has(key);
+        return `<tr class="${status === "failed" ? "row-failed" : ""}">${cells}<td class="ids">${idCell}</td>
+            <td class="result"><span class="mark ${status}">${label}</span> ${action}</td></tr>
+          ${open && !row.untested && status !== "e2e" ? `<tr class="detail"><td colspan="${row.cells.length + 1}"><div class="detail-box">${detailHtml(row)}</div></td></tr>` : ""}`;
+      }).join("");
+      if (!trs.trim()) return "";
+      const head = t.headers.slice(0, -1).map((h) => `<th>${md(h)}</th>`).join("");
+      return `${t.heading ? `<h3>${md(t.heading)}</h3>` : ""}<div class="table-wrap"><table>
+        <thead><tr>${head}<th>テスト</th><th>結果</th></tr></thead><tbody>${trs}</tbody></table></div>`;
+    }).join("");
+    const isOpen = state.query || state.filter !== "all" || state.openSections?.get(si) !== false;
+    return `<details class="section" data-section="${si}" ${isOpen ? "open" : ""}>
+      <summary><span class="sec-title">${md(sec.title)}</span>
+        <span class="sec-counts">
+          ${n("passed") ? `<span class="pill pass">✓ ${n("passed")}</span>` : ""}
+          ${n("failed") ? `<span class="pill fail">✗ ${n("failed")}</span>` : ""}
+          ${n("untested") ? `<span class="pill none">未テスト ${n("untested")}</span>` : ""}
+          <span class="muted">${rows.length} 件</span>
+          ${secIds.length ? `<button class="small" data-run="${esc(secIds.join(","))}" ${state.running.size ? "disabled" : ""}>この節を実行</button>` : ""}
+        </span></summary>
+      <div class="sec-body">${tables}</div></details>`;
+  }).join("");
+  $("#sections").innerHTML = html || `<p class="empty">条件に合う行がありません。</p>`;
+}
+
+function render() {
+  renderSummary();
+  renderSections();
+  if (state.running.size) $("#status-line").textContent = `実行中…（${state.running.size} 件のテスト ID）`;
+  else if (state.lastRun) $("#status-line").textContent =
+    `前回: ${new Date(state.lastRun.at).toLocaleString("ja-JP")} · ${state.lastRun.label} · ${state.lastRun.seconds} 秒`;
+  else $("#status-line").textContent = "まだ実行していません";
+}
+
+function showBanner(title, body) {
+  $("#banner").innerHTML = title ? `<div class="banner"><strong>${esc(title)}</strong>${body ? `<pre>${esc(body)}</pre>` : ""}</div>` : "";
+}
+
+async function run(ids, label) {
+  if (state.running.size) return;
+  const all = ids === null;
+  const target = all ? allIds() : [...new Set(ids)];
+  if (target.length === 0) return;
+  target.forEach((id) => state.running.add(id));
+  showBanner("");
+  render();
+  try {
+    const res = await fetch("/api/run", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(all ? { all: true } : { ids: target }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `エラー（${res.status}）`);
+    const at = data.finishedAt;
+    for (const id of target) {
+      const r = data.byId[id];
+      if (r) state.results[id] = { ...r, at };
+      else delete state.results[id]; // 実行されなかった（消えたテストなど）
+    }
+    state.lastRun = { at, label, seconds: data.seconds };
+    save();
+    const errs = data.errors.map((e) => `${e.file}\n${e.message}`).join("\n\n");
+    if (errs || data.log) showBanner("テストのファイルを読み込めませんでした", errs || data.log);
+    else if (data.failed) showBanner(`${data.failed} 件の ID で失敗しました。赤い行の ID を押すと、理由が見られます`);
+  } catch (err) {
+    showBanner("実行できませんでした", err.message);
+  } finally {
+    state.running.clear();
+    render();
+  }
+}
+
+document.addEventListener("click", (e) => {
+  const runBtn = e.target.closest("[data-run]");
+  if (runBtn) {
+    e.preventDefault();
+    const ids = runBtn.dataset.run.split(",");
+    return run(ids, ids.length === 1 ? ids[0] : `${ids.length} 件`);
+  }
+  const chip = e.target.closest("[data-toggle]");
+  if (chip) {
+    const key = chip.dataset.toggle;
+    state.open.has(key) ? state.open.delete(key) : state.open.add(key);
+    return renderSections();
+  }
+  const f = e.target.closest("[data-filter]");
+  if (f) {
+    state.filter = f.dataset.filter;
+    document.querySelectorAll("[data-filter]").forEach((b) => b.setAttribute("aria-pressed", String(b === f)));
+    return renderSections();
+  }
+});
+// 節を閉じた・開いたを覚えておく（描き直しても戻らないように）
+document.addEventListener("toggle", (e) => {
+  const d = e.target;
+  if (!d.matches?.("details.section") || state.query || state.filter !== "all") return;
+  state.openSections ??= new Map();
+  state.openSections.set(Number(d.dataset.section), d.open);
+}, true);
+
+$("#run-all").onclick = () => run(null, "全部");
+$("#run-visible").onclick = () => {
+  const ids = state.spec.sections.flatMap(rowsOf).filter(matches).flatMap((r) => r.ids);
+  run(ids, `表示中の ${new Set(ids).size} 件`);
+};
+$("#run-failed").onclick = () => run(allIds().filter((id) => state.results[id]?.status === "failed"), "失敗の再実行");
+$("#search").oninput = (e) => { state.query = e.target.value.trim(); renderSections(); };
+
+(async () => {
+  try {
+    const res = await fetch("/api/spec");
+    const data = await res.json();
+    state.spec = { sections: data.sections };
+    state.titles = data.titles;
+    state.e2e = data.e2e || {};
+    // 仕様書から消えた ID の結果は捨てる
+    for (const id of Object.keys(state.results)) if (!state.titles[id]) delete state.results[id];
+    render();
+  } catch (err) {
+    showBanner("テスト仕様書を読み込めませんでした", err.message);
+  }
+})();
+</script>
+</body>
+</html>

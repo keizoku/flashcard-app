@@ -1,0 +1,24 @@
+#!/bin/sh
+# コミットの前に単体テストを実行する。失敗したらコミットしない。
+# （有効にする: git config core.hooksPath .githooks ／ 一度だけ飛ばす: git commit --no-verify）
+
+# Markdown だけの変更（設計書・README の修正など）ならテストしない。
+# ただし、テストが中身を確かめている文書（テスト仕様書・テーブル定義書）を変えたときはテストする
+if git diff --cached --name-only --diff-filter=ACMRD | grep -v '\.md$' | grep -q . ||
+   git diff --cached --name-only --diff-filter=ACMRD | grep -qE '^docs/(test-spec|tables)\.md$'; then :; else
+  exit 0
+fi
+
+echo "pre-commit: 単体テストを実行します（docker compose）..."
+if [ -n "$(docker compose ps -q --status running app 2>/dev/null)" ]; then
+  docker compose exec -T app npm test
+else
+  docker compose run --rm -T app npm test
+fi
+status=$?
+if [ $status -ne 0 ]; then
+  echo ""
+  echo "pre-commit: テストが失敗したので、コミットを中止しました。"
+  echo "  直してからもう一度コミットしてください（どうしても今コミットするなら git commit --no-verify）"
+fi
+exit $status

@@ -1,0 +1,15 @@
+node_modules/
+.next/
+.env*.local
+.DS_Store
+
+.env
+
+# テスト結果レポート（docker compose run --rm e2e で作る）と、画面のテストの作業用ファイル
+reports/
+test-results/
+playwright-report/
+
+# 販売促進用 PDF の作業用ファイル
+promo/.brochure-build.html
+promo/.preview-*.png
