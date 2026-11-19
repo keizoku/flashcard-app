@@ -1,66 +1,38 @@
 import { describe, expect, test } from "vitest";
-import { normalizeFilters, youtubeSearchUrl } from "@/lib/youtubeSearch";
+import { filterVideos } from "@/lib/videoFilter";
 
-// 「YouTube で探す」。API は使わず、条件を入れた YouTube の検索結果のページの URL を作る
+// みんなが学んだ動画（おすすめ）の中から探す。画面の中で、キーワード・レベル・長さで絞り込む
 
-describe("検索の条件を整える", () => {
-  test("VS-01 何も入れなければ決まった値。おかしな値（YouTube になくなった並び順も）は決まった値に戻す。キーワードは前後の空白を除き100文字まで", () => {
-    expect(normalizeFilters({ order: "date" }).order).toBe("relevance");
-    expect(normalizeFilters({ order: "rating" }).order).toBe("relevance");
-    expect(normalizeFilters({})).toEqual({ q: "", duration: "any", captions: true, order: "relevance", period: "any" });
-    expect(normalizeFilters({ q: "  travel vlog  ", duration: "huge", captions: "0", order: "x", period: "?" })).toEqual({
-      q: "travel vlog", duration: "any", captions: false, order: "relevance", period: "any",
-    });
-    expect(normalizeFilters({ q: "a".repeat(150) }).q).toHaveLength(100);
-    expect(normalizeFilters({ duration: "medium", captions: "1", order: "viewCount", period: "year" })).toEqual({
-      q: "", duration: "medium", captions: true, order: "viewCount", period: "year",
-    });
-  });
-});
+const V = [
+  { id: "a", title: "A Walk in the Park", channel: "Daily English", fit: "good", seconds: 120 },
+  { id: "b", title: "Cooking Pasta at Home", channel: "Kitchen Life", fit: "easy", seconds: 600 },
+  { id: "c", title: "London Travel Vlog", channel: "Walk With Me", fit: "hard", seconds: 1500 },
+  { id: "d", title: "Morning Routine", channel: "Daily English", fit: "good", seconds: null },
+];
+const ids = (list) => list.map((v) => v.id);
 
-// YouTube の sp（絞り込み）を読む: 並び順はいちばん外の 1番、絞り込みは 2番の中（1 公開時期・2 種類・3 長さ・5 字幕）
-function readSp(url) {
-  const sp = new URL(url).searchParams.get("sp");
-  const bytes = [...Buffer.from(sp, "base64")];
-  const read = (arr) => {
-    const out = {};
-    for (let i = 0; i < arr.length; ) {
-      const field = arr[i] >> 3;
-      const wire = arr[i] & 7;
-      if (wire === 0) {
-        out[field] = arr[i + 1];
-        i += 2;
-      } else {
-        const len = arr[i + 1];
-        out[field] = read(arr.slice(i + 2, i + 2 + len));
-        i += 2 + len;
-      }
-    }
-    return out;
-  };
-  return read(bytes);
-}
-
-describe("YouTube の検索結果のページの URL", () => {
-  test("VS-02 キーワードを入れ、動画だけ・字幕あり（既定）で絞る", () => {
-    const url = youtubeSearchUrl(normalizeFilters({ q: "travel vlog" }));
-    expect(url.startsWith("https://www.youtube.com/results?")).toBe(true);
-    expect(new URL(url).searchParams.get("search_query")).toBe("travel vlog");
-    expect(readSp(url)).toEqual({ 2: { 2: 1, 5: 1 } });
+describe("みんなが学んだ動画から探す", () => {
+  test("VS-01 キーワード: タイトルかチャンネル名に入っている動画。大文字・小文字は区別しない。空白で区切ると、全部が入っているもの", () => {
+    expect(ids(filterVideos(V, { q: "walk" }))).toEqual(["a", "c"]);
+    expect(ids(filterVideos(V, { q: "DAILY" }))).toEqual(["a", "d"]);
+    expect(ids(filterVideos(V, { q: "daily  morning " }))).toEqual(["d"]);
+    expect(ids(filterVideos(V, { q: "   " }))).toEqual(["a", "b", "c", "d"]);
+    expect(ids(filterVideos(V, { q: "zzz" }))).toEqual([]);
   });
 
-  test.each([
-    // 番号は、YouTube の検索フィルタのリンクで確かめたもの（2026年11月）
-    [{ duration: "short" }, { 2: { 2: 1, 3: 4, 5: 1 } }],
-    [{ duration: "medium" }, { 2: { 2: 1, 3: 5, 5: 1 } }],
-    [{ duration: "long" }, { 2: { 2: 1, 3: 2, 5: 1 } }],
-    [{ captions: "0" }, { 2: { 2: 1 } }],
-    [{ order: "viewCount" }, { 1: 3, 2: { 2: 1, 5: 1 } }],
-    [{ period: "week" }, { 2: { 1: 3, 2: 1, 5: 1 } }],
-    [{ period: "month" }, { 2: { 1: 4, 2: 1, 5: 1 } }],
-    [{ period: "year" }, { 2: { 1: 5, 2: 1, 5: 1 } }],
-    [{ duration: "medium", captions: "1", order: "viewCount", period: "year" }, { 1: 3, 2: { 1: 5, 2: 1, 3: 5, 5: 1 } }],
-  ])("VS-03 %o の条件を、YouTube の絞り込みにする", (raw, sp) => {
-    expect(readSp(youtubeSearchUrl(normalizeFilters({ q: "x", ...raw })))).toEqual(sp);
+  test("VS-02 レベル: ちょうどいい / やさしい / むずかしい のどれか。指定なしなら全部", () => {
+    expect(ids(filterVideos(V, { fit: "good" }))).toEqual(["a", "d"]);
+    expect(ids(filterVideos(V, { fit: "easy" }))).toEqual(["b"]);
+    expect(ids(filterVideos(V, { fit: "hard" }))).toEqual(["c"]);
+    expect(ids(filterVideos(V, { fit: "all" }))).toEqual(["a", "b", "c", "d"]);
+  });
+
+  test("VS-03 長さ: 3分未満 / 3〜20分 / 20分より長い。長さのわからない動画は、長さを指定したときは出さない。条件はいっしょに使える。並び順は変えない", () => {
+    expect(ids(filterVideos(V, { length: "short" }))).toEqual(["a"]);
+    expect(ids(filterVideos(V, { length: "medium" }))).toEqual(["b"]);
+    expect(ids(filterVideos(V, { length: "long" }))).toEqual(["c"]);
+    expect(ids(filterVideos(V, { length: "any" }))).toEqual(["a", "b", "c", "d"]);
+    expect(ids(filterVideos(V, { q: "daily", fit: "good", length: "short" }))).toEqual(["a"]);
+    expect(ids(filterVideos(V, {}))).toEqual(["a", "b", "c", "d"]);
   });
 });

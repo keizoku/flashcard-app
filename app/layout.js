@@ -23,8 +23,9 @@ export default async function RootLayout({ children }) {
                   <Link href="/shared">みんなのデッキ</Link>
                   <Link href="/stats">統計</Link>
                   <Link href="/settings">レベル設定</Link>
-                  <Link href="/account" className="nav-account" title="アカウント（パスワードの変更）">
-                    {user.email}
+                  {/* メールアドレスは出さない（画面を人に見られても大丈夫なように）。表示名がなければ「アカウント」 */}
+                  <Link href="/account" className="nav-account" title="アカウント（表示名・パスワードの変更）">
+                    {user.displayName ?? "アカウント"}
                   </Link>
                   <form action={logout} className="nav-logout">
                     <button type="submit">ログアウト</button>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { FITS, LENGTHS, filterVideos } from "@/lib/videoFilter";
 import { formatTime, videoUrl } from "@/lib/youtube";
 
 // おすすめの動画の「レベルに合うか」の表示
@@ -66,20 +67,59 @@ function VideoResult({ video }) {
   );
 }
 
-// おすすめの動画（みんなが学んだ動画を、あなたのレベルに合う順に）
+function Select({ label, options, value, onChange }) {
+  return (
+    <label>
+      {label}
+      <select value={value} onChange={(e) => onChange(e.target.value)}>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+// みんなが学んだ動画（あなたのレベルに合う順）。キーワード・レベル・長さで、その場で絞り込む
 export function Recommendations({ videos }) {
+  const [q, setQ] = useState("");
+  const [fit, setFit] = useState("all");
+  const [length, setLength] = useState("any");
+
+  if (videos.length === 0) {
+    return (
+      <div className="notice">
+        <p>まだ探せる動画がありません。字幕を入れたデッキが増えると、ここに出てきます。</p>
+        <p className="note small">
+          それまでは、YouTube で好きな動画を見つけて、その URL を<Link href="/decks/new">新しいデッキ</Link>に貼ってください。
+        </p>
+      </div>
+    );
+  }
+  const shown = filterVideos(videos, { q, fit, length });
   return (
     <section className="search-results recommendations">
-      <h2 className="section-title">あなたへのおすすめ（みんなが学んだ動画）</h2>
-      <p className="note small">
-        ほかの人が字幕を入れてデッキにした動画を、あなたのレベルと覚えた語で解析しました。
-        「ちょうどいい」は、全部わかる文が5〜8割の動画です。自分のデッキにある動画は出しません。
-      </p>
-      {videos.length === 0 ? (
-        <p className="note">まだおすすめできる動画がありません。字幕を入れたデッキが増えると、ここに出てきます。</p>
+      <div className="add-form search-form">
+        <label className="search-q">
+          キーワード（タイトル・チャンネル名）
+          <input value={q} onChange={(e) => setQ(e.target.value)} maxLength={100} placeholder="例: travel, cooking" />
+        </label>
+        <div className="search-grid">
+          <Select label="レベル" options={FITS} value={fit} onChange={setFit} />
+          <Select label="長さ" options={LENGTHS} value={length} onChange={setLength} />
+        </div>
+        <p className="note small">「ちょうどいい」は、全部わかる文が5〜8割の動画です。自分のデッキにある動画は出しません。</p>
+        <p className="search-count small">
+          {videos.length}本のうち <b>{shown.length}本</b>を表示
+        </p>
+      </div>
+      {shown.length === 0 ? (
+        <p className="note">条件に合う動画がありません。条件をゆるめてみてください。</p>
       ) : (
         <ul className="video-list">
-          {videos.map((v) => (
+          {shown.map((v) => (
             <VideoResult key={v.id} video={v} />
           ))}
         </ul>

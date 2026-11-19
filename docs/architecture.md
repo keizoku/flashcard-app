@@ -46,7 +46,7 @@ flowchart LR
 
 ```
 app/                 画面（Next.js App Router）
-  layout.js          共通のヘッダー（ログイン中はメールアドレスとログアウト）
+  layout.js          共通のヘッダー（ログイン中は表示名とログアウト）
   page.js            トップ: デッキ一覧（タグで絞り込み、理解度）
   actions.js         デッキの作成・削除、カードの追加
   auth/              ログイン・登録などの Server Action とフォーム
@@ -125,18 +125,17 @@ sequenceDiagram
 | `tags.js` | タグの整形と保存 | ○ |
 | `story.js` / `storyPrompt.js` | 物語のプロンプト、答えからデッキを作る | ○ |
 | `recommend.js` | おすすめの動画（ほかの人が字幕付きでデッキにした動画を、自分のレベルで解析して並べる） | ○ |
-| `youtubeSearch.js` | 「YouTube で探す」の URL（条件を YouTube の絞り込みにする） | |
+| `videoFilter.js` | 動画を探す画面の絞り込み（キーワード・レベル・長さ）。画面の部品からも使う | |
 | `youtube.js` / `videoTitle.js` / `format.js` / `levels.js` | 小さな道具 | |
 
 `import "server-only"` が付いたファイルは、ブラウザ側に入らない（Next.js がビルド時に止める）。
-`youtube.js` / `format.js` / `levels.js` / `review.js` は画面の部品からも使う。
+`youtube.js` / `format.js` / `levels.js` / `review.js` / `videoFilter.js` は画面の部品からも使う。
 
 ## 外部とのつながり
 
 | 相手 | 使い方 | 失敗したとき |
 | --- | --- | --- |
 | YouTube oEmbed | デッキ名が空のとき、動画タイトルを取る。おすすめの動画のタイトル・チャンネル名を取る（API キー不要、5秒で打ち切り） | タイトルなし（手で入力）/ おすすめに出さない |
-| YouTube の検索結果のページ | 「YouTube で探す」で、条件を入れた検索結果を新しいタブで開く（API は使わない） | — |
 | YouTube の埋め込み（youtube-nocookie.com） | 検索結果の動画を、その場で再生する | — |
 | SMTP | 登録・再設定のメール | 「メールを送れませんでした」と表示 |
 | チャット AI | アプリからは呼ばない。ユーザーがプロンプトをコピーし、答えを貼り付ける | — |

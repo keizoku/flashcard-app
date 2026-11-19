@@ -3,11 +3,10 @@ import AddDeckForm from "@/app/decks/new/AddDeckForm";
 import NewDeckPage from "@/app/decks/new/page";
 import { Recommendations } from "@/app/search/Recommendations";
 import SearchPage from "@/app/search/page";
-import { GET as openYoutube } from "@/app/search/youtube/route";
 import { getRecommendations } from "@/lib/recommend";
 import { createUser, loginAs, resetDb } from "../helpers.js";
 
-// 動画を探す画面（「YouTube で探す」とおすすめ）と、おすすめの動画からデッキを作る画面
+// 動画を探す画面（みんなが学んだ動画）と、そこからデッキを作る画面
 vi.mock("@/lib/recommend", () => ({ getRecommendations: vi.fn() }));
 
 let me;
@@ -41,27 +40,11 @@ function propsOf(node, component) {
   return propsOf(node.props?.children, component);
 }
 
-describe("YouTube で探す", () => {
-  test("VS-04 条件を受け取り、YouTube の検索結果のページへ移す。キーワードが空なら、動画を探すの画面に戻す。ログインが要る", async () => {
-    const res = await openYoutube(new Request("http://localhost:3000/search/youtube?q=travel+vlog&duration=short&captions=1"));
-    expect(res.status).toBe(307);
-    const to = new URL(res.headers.get("location"));
-    expect(to.origin + to.pathname).toBe("https://www.youtube.com/results");
-    expect(to.searchParams.get("search_query")).toBe("travel vlog");
-    expect(to.searchParams.get("sp")).toBeTruthy();
-
-    const empty = await openYoutube(new Request("http://localhost:3000/search/youtube?q=+"));
-    expect(new URL(empty.headers.get("location")).pathname).toBe("/search");
-
-    globalThis.testCookies.clear();
-    await expect(openYoutube(new Request("http://localhost:3000/search/youtube?q=x"))).rejects.toMatchObject({ redirectTo: expect.stringMatching(/^\/login/) });
-  });
-
-  test("VS-05 動画を探す画面に、API キーの案内は出さない。「YouTube で探す」の入力欄を出す", async () => {
-    const page = await SearchPage(sp({}));
-    const text = textOf(page);
+describe("動画を探す画面", () => {
+  test("VS-04 YouTube の検索（「YouTube で探す」）は出さない。API キーの案内も出さない", async () => {
+    const text = textOf(await SearchPage(sp({})));
+    expect(text).not.toContain("YouTube で探す");
     expect(text).not.toContain("API");
-    expect(text).toContain("YouTube で探す");
   });
 });
 
@@ -76,7 +59,7 @@ describe("おすすめの動画（動画を探す画面）", () => {
 });
 
 describe("おすすめの動画からデッキを作る", () => {
-  test("VS-06 URL とデッキ名（動画のタイトル）を入れた状態で、新しいデッキの画面を開く。戻り先は動画を探すの画面だけ受け付ける", async () => {
+  test("VS-05 URL とデッキ名（動画のタイトル）を入れた状態で、新しいデッキの画面を開く。戻り先は動画を探すの画面だけ受け付ける", async () => {
     let page = await NewDeckPage(sp({ video: "aaaaaaaaaaa", name: "A trip to the sea", back: "/search" }));
     let form = propsOf(page, AddDeckForm);
     expect(form.initial).toEqual({ url: "https://www.youtube.com/watch?v=aaaaaaaaaaa", name: "A trip to the sea" });

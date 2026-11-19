@@ -37,9 +37,10 @@ test("UI-01 ログインしていないと、ログイン画面へ。ログイ�
 
   await expect(page).toHaveURL(/\/stats$/);
   await expect(page.getByRole("heading", { name: "統計" })).toBeVisible();
-  await expect(header.getByRole("link", { name: "me@example.com" })).toBeVisible();
+  await expect(header.getByRole("link", { name: "アカウント" })).toBeVisible();
+  await expect(header.getByText("me@example.com")).toHaveCount(0);
   await expect(header.getByRole("button", { name: "ログアウト" })).toBeVisible();
-  await shot(page, testInfo, "3. 元の画面（統計）に戻り、ヘッダーにメールアドレスとログアウトが出た");
+  await shot(page, testInfo, "3. 元の画面（統計）に戻り、ヘッダーに「アカウント」（表示名を決めていないとき）とログアウトが出た。メールアドレスは出ない");
 
   await header.getByRole("button", { name: "ログアウト" }).click();
   await expect(page).toHaveURL(/\/login/);
@@ -256,7 +257,7 @@ test("UI-09 ログインしているときのトップは、今までどおり�
   await shot(page, testInfo, "1. ログインしていると、デッキの一覧が出る");
 });
 
-test("UI-10 おすすめの動画: ほかの人が学んだ動画が、理解度とレベルに合うかの印つきで出る。デッキ名・見られない動画は出ない。選ぶとデッキを作れる", async ({ page, context }, testInfo) => {
+test("UI-10 動画を探す: ほかの人が学んだ動画が、理解度とレベルに合うかの印つきで出る。デッキ名・見られない動画は出ない。絞り込めて、選ぶとデッキを作れる", async ({ page, context }, testInfo) => {
   const lines = [
     "I like to walk in the park every morning.", "We had a nice dinner with my family.", "The weather is very good today.",
     "She bought a new book at the store.", "My brother plays soccer after school.", "They went to the beach last summer.",
@@ -276,20 +277,30 @@ test("UI-10 おすすめの動画: ほかの人が学んだ動画が、理解度
   await loginAs(context, me);
 
   await page.goto("/search");
-  await expect(page.getByRole("button", { name: /YouTube で探す/ })).toBeVisible();
+  await expect(page.getByText("YouTube で探す")).toHaveCount(0);
   const recs = page.locator(".recommendations");
-  await expect(recs.getByRole("heading", { name: /あなたへのおすすめ/ })).toBeVisible();
   await expect(recs.locator("li")).toHaveCount(1);
   const item = recs.locator("li").filter({ hasText: "A Walk in the Park" });
   await expect(item.getByText("ちょうどいい")).toBeVisible();
   await expect(item.getByText(/理解度 75%/)).toBeVisible();
   await expect(item.getByText(/1人が学習/)).toBeVisible();
   await expect(page.getByText("ほかの人の秘密のデッキ名")).toHaveCount(0);
-  await shot(page, testInfo, "1. 上に「YouTube で探す」。おすすめに「ちょうどいい・理解度 75%・1人が学習」で出る。消された動画とデッキ名は出ない");
+  await shot(page, testInfo, "1. みんなが学んだ動画が「ちょうどいい・理解度 75%・1人が学習」で出る。消された動画とデッキ名は出ない");
+
+  // 絞り込み（その場で）
+  await page.getByLabel("キーワード").fill("cooking");
+  await expect(recs.locator("li")).toHaveCount(0);
+  await expect(page.getByText("条件に合う動画がありません")).toBeVisible();
+  await page.getByLabel("キーワード").fill("park");
+  await page.getByLabel("レベル").selectOption("easy");
+  await expect(recs.locator("li")).toHaveCount(0);
+  await page.getByLabel("レベル").selectOption("good");
+  await expect(recs.locator("li")).toHaveCount(1);
+  await shot(page, testInfo, "2. キーワード「park」・レベル「ちょうどいい」で絞り込むと出る（「cooking」や「やさしい」では出ない）");
 
   await item.getByRole("link", { name: "この動画でデッキを作る" }).click();
   await expect(page).toHaveURL(/\/decks\/new\?/);
   await expect(page.locator('input[name="url"]')).toHaveValue("https://www.youtube.com/watch?v=pubAAAAAAAA");
   await expect(page.locator('input[name="name"]')).toHaveValue("A Walk in the Park");
-  await shot(page, testInfo, "2. 新しいデッキの画面に、動画の URL とタイトルが入っている");
+  await shot(page, testInfo, "3. 新しいデッキの画面に、動画の URL とタイトルが入っている");
 });

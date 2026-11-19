@@ -885,3 +885,5 @@ kbd {
 .badge.fit-good { background: #e7f5ea; color: #2e7d32; }
 .badge.fit-easy { background: #e7f0fd; color: #1c5fc4; }
 .badge.fit-hard { background: #fdecea; color: #c0392b; }
+.search-form .note { margin: 0; }
+.search-count { margin: 0; }
