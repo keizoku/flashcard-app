@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import { LEVELS, MAX_VOCAB_SIZE, MIN_VOCAB_SIZE } from "@/lib/levels";
 import { saveSettings } from "./actions";
 
@@ -13,7 +13,16 @@ export default function SettingsForm({ levelKey, vocabSize }) {
   const isCustom = selected === "custom";
 
   return (
-    <form action={formAction} className="add-form">
+    // action={formAction} にすると、送ったあとに React がフォームを元に戻し、
+    // 選んだレベル・入れた数が、画面を開いたときの値に見えてしまう。onSubmit で送って、元に戻させない
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const data = new FormData(e.currentTarget);
+        startTransition(() => formAction(data));
+      }}
+      className="add-form"
+    >
       <label>
         あなたのレベル
         <select name="level" value={selected} onChange={(e) => setSelected(e.target.value)}>

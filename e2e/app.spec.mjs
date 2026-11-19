@@ -304,3 +304,31 @@ test("UI-10 動画を探す: ほかの人が学んだ動画が、理解度とレ
   await expect(page.locator('input[name="name"]')).toHaveValue("A Walk in the Park");
   await shot(page, testInfo, "3. 新しいデッキの画面に、動画の URL とタイトルが入っている");
 });
+
+test("UI-11 レベル設定: 選んだレベルを保存すると、保存したあとも選んだレベルが出ている。開き直しても同じ", async ({ page, context }, testInfo) => {
+  await loginAs(context, me);
+  await page.goto("/settings");
+  const level = page.getByLabel("あなたのレベル");
+  await level.selectOption("eiken-p1");
+  await shot(page, testInfo, "1. 英検準1級を選んだ");
+  await page.getByRole("button", { name: "保存" }).click();
+
+  await expect(page.getByRole("status")).toHaveText("保存しました");
+  await expect(level).toHaveValue("eiken-p1");
+  await expect(page.locator("main")).toContainText("いまの設定: 英検準1級");
+  await shot(page, testInfo, "2. 保存したあとも、英検準1級のまま");
+
+  await page.reload();
+  await expect(level).toHaveValue("eiken-p1");
+  await shot(page, testInfo, "3. 開き直しても英検準1級");
+
+  // 語彙数を直接指定したときも、保存したあとに入れた数が残る
+  await level.selectOption("custom");
+  await page.getByLabel("知っている単語の数").fill("6400");
+  await page.getByRole("button", { name: "保存" }).click();
+  await expect(page.getByRole("status")).toHaveText("保存しました");
+  await expect(level).toHaveValue("custom");
+  await expect(page.getByLabel("知っている単語の数")).toHaveValue("6400");
+  await expect(page.locator("main")).toContainText("上位 6,400 語");
+  await shot(page, testInfo, "4. 語彙数を直接指定して保存しても、入れた数のまま");
+});
