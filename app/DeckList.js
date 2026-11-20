@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import ConfirmButton from "@/app/components/ConfirmButton";
 import TagFilter from "@/app/components/TagFilter";
+import { tagCandidates } from "@/lib/tagCandidates";
 import { deleteDecks } from "./actions";
 
 // デッキの一覧。チェックを付けて、まとめて削除できる
@@ -21,11 +22,7 @@ export default function DeckList({ decks: allDecks }) {
   // 追加したタグをすべて持つデッキだけ（AND 条件）
   const decks = allDecks.filter((d) => activeTags.every((t) => d.tags.includes(t)));
   // 今の結果をさらに絞り込めるタグと、その件数
-  const candidates = useMemo(() => {
-    const counts = new Map();
-    for (const d of decks) for (const t of d.tags) if (!activeTags.includes(t)) counts.set(t, (counts.get(t) ?? 0) + 1);
-    return [...counts].map(([tag, count]) => ({ tag, count })).sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
-  }, [decks, activeTags]);
+  const candidates = useMemo(() => tagCandidates(decks, activeTags), [decks, activeTags]);
   const visibleSelected = new Set([...selected].filter((id) => decks.some((d) => d.id === id)));
   const allSelected = decks.length > 0 && visibleSelected.size === decks.length;
   const cardCount = decks.filter((d) => visibleSelected.has(d.id)).reduce((n, d) => n + d.card_count, 0);
@@ -90,7 +87,11 @@ export default function DeckList({ decks: allDecks }) {
 
       <ul className="decks">
         {decks.map((deck) => (
-          <li key={deck.id} className={`card-row${selected.has(deck.id) ? " checked" : ""}`}>
+          // 覚えた単語で作った物語のデッキは、淡い色と「物語」の印で区別する
+          <li
+            key={deck.id}
+            className={`card-row${deck.kind === "story" ? " story-deck" : ""}${selected.has(deck.id) ? " checked" : ""}`}
+          >
             <input
               type="checkbox"
               className="card-check"
@@ -100,7 +101,10 @@ export default function DeckList({ decks: allDecks }) {
             />
             <Link href={`/decks/${deck.id}`}>
               <span className="deck-main">
-                <span className="deck-name">{deck.name}</span>
+                <span className="deck-name">
+                  {deck.kind === "story" && <span className="story-badge">物語</span>}
+                  {deck.name}
+                </span>
                 {deck.comprehension && (
                   <span
                     className="deck-progress"

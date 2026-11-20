@@ -20,7 +20,7 @@ export default async function Home({ searchParams }) {
   const { notice } = await searchParams;
   const { rows: decks } = await pool.query(
     `
-    SELECT d.id, d.name, COUNT(c.id)::int AS card_count,
+    SELECT d.id, d.name, d.kind, COUNT(c.id)::int AS card_count,
            COUNT(c.id) FILTER (WHERE c.review_due_at IS NULL OR c.review_due_at <= now())::int AS due_count,
            COALESCE((SELECT array_agg(t.name ORDER BY t.name)
                      FROM deck_tags dt JOIN tags t ON t.id = dt.tag_id

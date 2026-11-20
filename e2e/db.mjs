@@ -59,10 +59,11 @@ export async function loginAs(context, user) {
   await context.addCookies([{ name: "flashcard_session", value: token, url: "http://localhost:3200" }]);
 }
 
-export async function createDeck(userId, { name = "Deck", transcript = null, videoId = null } = {}) {
+// kind: "video"（ふつうのデッキ）か "story"（覚えた単語で作った物語）
+export async function createDeck(userId, { name = "Deck", transcript = null, videoId = null, kind = "video" } = {}) {
   const { rows } = await db().query(
-    "INSERT INTO decks (user_id, name, transcript, video_id) VALUES ($1, $2, $3, $4) RETURNING id",
-    [userId, name, transcript, videoId]
+    "INSERT INTO decks (user_id, name, transcript, video_id, kind) VALUES ($1, $2, $3, $4, $5) RETURNING id",
+    [userId, name, transcript, videoId, kind]
   );
   return rows[0].id;
 }

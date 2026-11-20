@@ -89,6 +89,24 @@ h1 { margin: 0 0 4px; font-size: 1.6rem; }
   text-decoration: none;
 }
 .decks a:hover { border-color: var(--muted); }
+/* 覚えた単語で作った物語のデッキ（淡いむらさき） */
+:root { --story-bg: #f6f2fd; --story-border: #e2d9f5; --story-badge-bg: #e9e0fb; --story-badge-text: #5b3fa3; }
+@media (prefers-color-scheme: dark) {
+  :root { --story-bg: #241f2e; --story-border: #3b3150; --story-badge-bg: #362c4a; --story-badge-text: #c9b6f2; }
+}
+.decks .story-deck > a { background: var(--story-bg); border-color: var(--story-border); }
+.decks .story-deck > a:hover, .decks .story-deck.checked > a { border-color: var(--muted); }
+.story-badge {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--story-badge-bg);
+  color: var(--story-badge-text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  vertical-align: 2px;
+}
 .deck-name { font-weight: 600; font-size: 1.1rem; overflow-wrap: anywhere; }
 .deck-count { color: var(--muted); white-space: nowrap; }
 

@@ -332,3 +332,18 @@ test("UI-11 レベル設定: 選んだレベルを保存すると、保存した
   await expect(page.locator("main")).toContainText("上位 6,400 語");
   await shot(page, testInfo, "4. 語彙数を直接指定して保存しても、入れた数のまま");
 });
+
+test("UI-12 デッキの一覧: 覚えた単語で作った物語のデッキは、淡い色と「物語」の印で、ほかのデッキと区別できる", async ({ page, context }, testInfo) => {
+  await createDeck(me.id, { name: "動画のデッキ" });
+  await createDeck(me.id, { name: "森の物語", kind: "story" });
+  await loginAs(context, me);
+  await page.goto("/");
+
+  const storyRow = page.locator(".decks li", { hasText: "森の物語" });
+  const videoRow = page.locator(".decks li", { hasText: "動画のデッキ" });
+  await expect(storyRow.getByText("物語", { exact: true })).toBeVisible();
+  await expect(videoRow.getByText("物語", { exact: true })).toHaveCount(0);
+  const bg = (row) => row.locator("a").evaluate((a) => getComputedStyle(a).backgroundColor);
+  expect(await bg(storyRow)).not.toBe(await bg(videoRow));
+  await shot(page, testInfo, "1. 物語のデッキだけ、淡い色と「物語」の印が付いている");
+});

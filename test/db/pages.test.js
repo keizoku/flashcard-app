@@ -86,6 +86,17 @@ describe("トップのデッキ一覧", () => {
     expect(decks).toHaveLength(1);
     expect(decks[0]).toMatchObject({ id: mine, name: "mine", card_count: 2, due_count: 1 });
   });
+
+  test("PG-04 デッキの種類（動画 / 覚えた単語で作った物語）も渡す。一覧で物語を区別するため", async () => {
+    const video = await createDeck(me.id, { name: "video" });
+    const story = await createDeck(me.id, { name: "story", kind: "story" });
+    const page = await Home({ searchParams: Promise.resolve({}) });
+    const { decks } = propsOf(page, DeckList);
+    expect(decks.map((d) => [d.id, d.kind])).toEqual([
+      [video, "video"],
+      [story, "story"],
+    ]);
+  });
 });
 
 describe("統計の画面", () => {

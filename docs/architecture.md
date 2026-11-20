@@ -123,13 +123,14 @@ sequenceDiagram
 | `review.js` | 記憶テストの間隔、覚え具合の区分 | |
 | `targets.js` | カードの覚えたい語（複数）の読み書き | ○ |
 | `tags.js` | タグの整形と保存 | ○ |
+| `tagCandidates.js` | デッキの一覧で、さらに絞り込めるタグの候補（件数の多い順、同じ件数なら文字コード順）。画面の部品から使う | |
 | `story.js` / `storyPrompt.js` | 物語のプロンプト、答えからデッキを作る | ○ |
 | `recommend.js` | おすすめの動画（ほかの人が字幕付きでデッキにした動画を、自分のレベルで解析して並べる） | ○ |
 | `videoFilter.js` | 動画を探す画面の絞り込み（キーワード・レベル・長さ）。画面の部品からも使う | |
 | `youtube.js` / `videoTitle.js` / `format.js` / `levels.js` | 小さな道具 | |
 
 `import "server-only"` が付いたファイルは、ブラウザ側に入らない（Next.js がビルド時に止める）。
-`youtube.js` / `format.js` / `levels.js` / `review.js` / `videoFilter.js` は画面の部品からも使う。
+`youtube.js` / `format.js` / `levels.js` / `review.js` / `videoFilter.js` / `tagCandidates.js` は画面の部品からも使う。
 
 ## 外部とのつながり
 
