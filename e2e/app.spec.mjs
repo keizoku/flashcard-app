@@ -347,3 +347,100 @@ test("UI-12 デッキの一覧: 覚えた単語で作った物語のデッキは
   expect(await bg(storyRow)).not.toBe(await bg(videoRow));
   await shot(page, testInfo, "1. 物語のデッキだけ、淡い色と「物語」の印が付いている");
 });
+
+// 勉強時間の合計（秒）。送られてくるまで少し待つことがあるので、expect.poll で使う
+const studySeconds = async (userId, kind) =>
+  (await db().query("SELECT COALESCE(SUM(seconds), 0)::int AS s FROM study_time WHERE user_id = $1 AND kind = $2", [userId, kind]))
+    .rows[0].s;
+
+test("UI-13 勉強時間（単語）: 記憶テストの画面で操作していた時間が記録される。2分を超えて何もしない分は数えない", async ({ page, context }, testInfo) => {
+  const deck = await createDeck(me.id, { name: "時間のデッキ" });
+  await createCard(deck, { front: "I like to walk in the park.", word: "walk" });
+  await loginAs(context, me);
+  await page.clock.install({ time: new Date("2026-11-20T03:00:00Z") });
+  await page.goto(`/decks/${deck}/study`);
+  await expect(page.locator(".study-card")).toBeVisible();
+
+  const touch = () => page.locator(".study-progress").click();
+  await page.clock.runFor(20_000);
+  await touch(); // 20秒
+  await page.clock.runFor(20_000);
+  await touch(); // 40秒
+  await page.clock.runFor(300_000); // 5分何もしない → 2分（120秒）だけ数える
+  await touch(); // 160秒
+  await page.clock.runFor(10_000); // 170秒
+  await shot(page, testInfo, "1. 記憶テストの画面で、操作しながら学習した");
+  await page.goto("/stats");
+
+  await expect.poll(() => studySeconds(me.id, "vocab")).toBeGreaterThanOrEqual(169);
+  expect(await studySeconds(me.id, "vocab")).toBeLessThanOrEqual(171);
+  expect(await studySeconds(me.id, "listening")).toBe(0);
+  expect(await studySeconds(other.id, "vocab")).toBe(0);
+  await expect(page.locator(".stat-tile", { hasText: "今日の単語" })).toContainText("2分");
+  await shot(page, testInfo, "2. 統計の画面の「今日の単語」に出た（5分何もしなかった分は2分までしか数えない）");
+});
+
+// YouTube の IFrame Player API の偽物。再生・一時停止を、テストから起こせる
+const FAKE_YT_API = `
+window.YT = {
+  Player: function (el, opts) {
+    const self = this;
+    window.__yt = { opts, seeks: [], setState: (s) => opts.events.onStateChange({ data: s, target: self }) };
+    this.seekTo = (t) => window.__yt.seeks.push(t);
+    this.playVideo = () => window.__yt.setState(1);
+    this.destroy = () => {};
+    const frame = document.createElement("iframe");
+    el.replaceWith(frame);
+    setTimeout(() => opts.events.onReady({ target: self }), 0);
+  },
+};
+window.onYouTubeIframeAPIReady && window.onYouTubeIframeAPIReady();
+`;
+
+test("UI-14 勉強時間（リスニング）: デッキの画面の動画を再生していた時間が記録される。カードの「動画のこの場面」はその時刻から再生する", async ({ page, context }, testInfo) => {
+  await page.route("https://www.youtube.com/iframe_api", (route) =>
+    route.fulfill({ contentType: "text/javascript", body: FAKE_YT_API })
+  );
+  const deck = await createDeck(me.id, { name: "動画のデッキ", videoId: "aaaaaaaaaaa" });
+  const card = await createCard(deck, { front: "I like to walk in the park.", word: "walk" });
+  await db().query("UPDATE cards SET video_id = 'aaaaaaaaaaa', start_seconds = 42 WHERE id = $1", [card]);
+  await loginAs(context, me);
+  await page.clock.install({ time: new Date("2026-11-20T03:00:00Z") });
+  await page.goto(`/decks/${deck}`);
+  await expect(page.locator(".deck-video iframe")).toBeAttached();
+  await expect(page.locator(".deck-video")).toContainText("リスニングの時間として記録します");
+
+  await page.locator(".cards summary").first().click();
+  await page.getByRole("link", { name: /動画のこの場面/ }).click();
+  expect(await page.evaluate(() => window.__yt.seeks)).toEqual([42]);
+  await expect(page).toHaveURL(new RegExp(`/decks/${deck}$`)); // 別のタブ・画面には移らない
+  await page.clock.runFor(45_000); // 45秒再生
+  await page.evaluate(() => window.__yt.setState(2)); // 一時停止
+  await page.clock.runFor(60_000); // 止めている間は数えない
+  await shot(page, testInfo, "1. デッキの画面で、カードの場面から動画を再生した");
+  await page.goto("/stats");
+
+  await expect.poll(() => studySeconds(me.id, "listening")).toBeGreaterThanOrEqual(44);
+  expect(await studySeconds(me.id, "listening")).toBeLessThanOrEqual(46);
+  const { rows } = await db().query("SELECT DISTINCT deck_id FROM study_time WHERE user_id = $1 AND kind = 'listening'", [me.id]);
+  expect(rows).toEqual([{ deck_id: deck }]);
+});
+
+test("UI-15 勉強時間を手で足す: 統計の画面で足すと今日の時間に出る。取り消すと戻る", async ({ page, context }, testInfo) => {
+  await loginAs(context, me);
+  await page.goto("/stats");
+  const tile = page.locator(".stat-tile", { hasText: "今日のリスニング" });
+  await expect(tile).toContainText("0分");
+
+  await page.getByLabel("種類").selectOption("listening");
+  await page.getByLabel("時間（分）").fill("25");
+  await page.getByRole("button", { name: "今日に足す" }).click();
+  await expect(tile).toContainText("25分");
+  await expect(page.locator(".manual-time-list")).toContainText("リスニング 25分");
+  await shot(page, testInfo, "1. リスニング 25分を足した");
+
+  await page.getByRole("button", { name: /を取り消す/ }).click();
+  await expect(tile).toContainText("0分");
+  await expect(page.locator(".manual-time-list")).toHaveCount(0);
+  await shot(page, testInfo, "2. 取り消すと 0分に戻った");
+});

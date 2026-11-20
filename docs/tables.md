@@ -23,6 +23,7 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 | [settings](#settings) | レベル設定 | 002 |
 | [known_words](#known_words) | 「知ってる」を押した語 | 002 |
 | [videos](#videos) | おすすめに出す YouTube の動画の情報 | 015（016 で列を変更） |
+| [study_time](#study_time) | 勉強時間（単語・リスニング） | 017 |
 | [schema_migrations](#schema_migrations) | 当てたマイグレーション | `scripts/migrate.mjs` |
 
 ---
@@ -235,6 +236,26 @@ YouTube の oEmbed（API キー不要）で取る。ユーザーのものでは�
 | available | boolean | | true | oEmbed で取れたか。false = 非公開・消された（おすすめに出さない） |
 
 - 主キー: `video_id`
+
+## study_time
+
+勉強時間（[features.md](features.md#14-勉強時間libstudytimejslibstudyclockjs)）。単語を覚えた時間（記憶テストの画面で操作していた時間）と、
+リスニングの時間（アプリの中で動画を再生していた時間）。画面から30秒ごとなどに少しずつ送られてくるので、
+1行は「その間に勉強した秒数」。統計の画面で手で足した分も入る。
+
+| 列 | 型 | NULL | 初期値 | 説明 |
+| --- | --- | --- | --- | --- |
+| id | bigint | | 連番 | 主キー |
+| user_id | integer | | | 勉強した人 |
+| deck_id | integer | ○ | | 勉強したデッキ。手で足した分・デッキを消したあとは NULL |
+| kind | text | | | `vocab`（単語）か `listening`（リスニング） |
+| source | text | | 'auto' | `auto`（画面が測った）か `manual`（手で足した） |
+| seconds | integer | | | 秒数。1以上（画面からは1回 600 秒まで、手で足すのは 600 分まで） |
+| recorded_at | timestamptz | | now() | 記録した日時。日ごとの集計は日本時間で区切る |
+
+- 主キー: `id`
+- 外部キー: `user_id` → `users.id`（ユーザーを消すと消える）、`deck_id` → `decks.id`（デッキを消すと NULL。時間の記録は残す）
+- インデックス: `study_time_user_recorded_at_idx`（`user_id, recorded_at`。日ごとの集計）、`study_time_deck_id_idx`（`deck_id`）
 
 ## schema_migrations
 

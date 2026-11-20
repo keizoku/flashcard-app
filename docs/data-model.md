@@ -20,6 +20,8 @@ erDiagram
   cards |o--o{ review_logs : "カードを消しても記録は残る"
   decks |o--o{ decks : "取り込み元（source_deck_id）"
   videos |o..o{ decks : "video_id（外部キーではない）"
+  users ||--o{ study_time : "勉強時間"
+  decks |o--o{ study_time : "デッキを消しても記録は残る"
 ```
 
 - ユーザーを消すと、そのユーザーのデッキ・カード・設定などはすべて消える（`ON DELETE CASCADE`）
@@ -28,6 +30,7 @@ erDiagram
   コピーの `source_deck_id` は取り込み元を指し、元を消すと NULL になる（コピーは消えない）
 - `videos` は YouTube の動画の情報（おすすめ用）。`decks.video_id` と同じ ID だが、外部キーではない（デッキを消しても残る）
 - カードを消しても学習の記録（`review_logs`）は残り、`card_id` が NULL になる（統計の日ごとの回数を変えないため）
+- デッキを消しても勉強時間（`study_time`）は残り、`deck_id` が NULL になる（勉強した時間は変えないため）
 - `decks.user_id` / `settings.user_id` / `known_words.user_id` が NULL の行は、ユーザー管理を入れる前のデータ。
   最初に登録を完了したユーザーが引き継ぐ（[auth.md](auth.md)）
 
@@ -56,6 +59,7 @@ erDiagram
 | 014_sharing.sql | デッキの共有（users.display_name、decks.published_at・source_deck_id） |
 | 015_videos.sql | おすすめの動画のための、YouTube の動画の情報（videos） |
 | 016_videos_oembed.sql | 動画の情報を API キーなし（oEmbed）で取る形に（公開の状態・長さ・埋め込みの列を消し、available を足す） |
+| 017_study_time.sql | 勉強時間（study_time） |
 
 決まり:
 - 当てたファイルは書き換えない。直すときは次の番号のファイルを足す

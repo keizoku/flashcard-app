@@ -4,6 +4,9 @@ import { getComprehensionByDeck } from "@/lib/comprehension";
 import { pool } from "@/lib/db";
 import { displayTarget } from "@/lib/format";
 import { STATUS_SQL, STATUSES } from "@/lib/review";
+import { formatDuration, STUDY_KINDS } from "@/lib/studyClock";
+import { getStudyTimeStats, MAX_MANUAL_MINUTES } from "@/lib/studyTime";
+import { ManualTimeForm, ManualTimeList } from "./StudyTimeForms";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +15,7 @@ const pct = (n, total) => (total > 0 ? Math.round((n / total) * 100) : 0);
 
 export default async function StatsPage() {
   const user = await requireUser();
+  const time = await getStudyTimeStats(user.id, { days: DAYS });
   // デッキごとの、覚え具合の内訳
   const { rows: deckRows } = await pool.query(
     `
@@ -72,6 +76,8 @@ export default async function StatsPage() {
   return (
     <main className="stats-page">
       <h1>統計</h1>
+
+      <StudyTimeSection time={time} />
 
       {overall.total === 0 ? (
         <p className="note">まだカードがありません。</p>
@@ -269,6 +275,135 @@ function DailyChart({ days }) {
           );
         })}
       </div>
+    </>
+  );
+}
+
+// 勉強時間（単語を覚えた時間・リスニングの時間）
+const KIND_KEYS = ["vocab", "listening"];
+const whenText = (d) =>
+  new Intl.DateTimeFormat("ja-JP", { timeZone: "Asia/Tokyo", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }).format(d);
+
+function StudyTimeSection({ time }) {
+  const tiles = [
+    { label: "今日の単語", seconds: time.today.vocab, kind: "vocab" },
+    { label: "今日のリスニング", seconds: time.today.listening, kind: "listening" },
+    { label: "7日間の単語", seconds: time.week.vocab, kind: "vocab" },
+    { label: "7日間のリスニング", seconds: time.week.listening, kind: "listening" },
+  ];
+  return (
+    <section aria-labelledby="study-time">
+      <h2 id="study-time">勉強時間</h2>
+      <div className="stat-tiles">
+        {tiles.map((t) => (
+          <div key={t.label} className="stat-tile">
+            <span className={`swatch time-${t.kind}`} aria-hidden="true" />
+            <span className="stat-label">{t.label}</span>
+            <span className="stat-value">{formatDuration(t.seconds)}</span>
+          </div>
+        ))}
+      </div>
+      <p className="note small">
+        単語 = 記憶テストの画面で操作していた時間（2分なにもしなければ止まる）。リスニング = アプリの中で動画を再生していた時間。
+        これまでの合計: 単語 {formatDuration(time.total.vocab)}・リスニング {formatDuration(time.total.listening)}
+      </p>
+      <TimeChart days={time.days} />
+
+      {time.byDeck.length > 0 && (
+        <details className="table-view">
+          <summary>デッキ別の時間</summary>
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">デッキ</th>
+                <th scope="col">単語</th>
+                <th scope="col">リスニング</th>
+              </tr>
+            </thead>
+            <tbody>
+              {time.byDeck.map((d) => (
+                <tr key={d.id}>
+                  <th scope="row">
+                    <Link href={`/decks/${d.id}`}>{d.name}</Link>
+                  </th>
+                  <td>{formatDuration(d.vocab)}</td>
+                  <td>{formatDuration(d.listening)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </details>
+      )}
+
+      <h3 className="manual-time-head">アプリの外で勉強した時間を足す</h3>
+      <p className="note small">スマホの YouTube アプリで聞いた時間などは、ここで足してください。</p>
+      <ManualTimeForm maxMinutes={MAX_MANUAL_MINUTES} />
+      <ManualTimeList
+        entries={time.manual.map((m) => ({
+          id: m.id,
+          when: whenText(m.recorded_at),
+          label: `${STUDY_KINDS[m.kind]} ${formatDuration(m.seconds)}`,
+        }))}
+      />
+    </section>
+  );
+}
+
+// 日ごとの勉強時間（分）。単語とリスニングの積み上げ縦棒
+function TimeChart({ days }) {
+  const minutes = (s) => Math.round(s / 60);
+  const max = Math.max(1, ...days.map((d) => d.vocab + d.listening));
+  return (
+    <>
+      <ul className="legend" aria-label="凡例">
+        {KIND_KEYS.map((k) => (
+          <li key={k}>
+            <span className={`swatch time-${k}`} aria-hidden="true" />
+            {STUDY_KINDS[k]}
+          </li>
+        ))}
+      </ul>
+      <div className="daily-chart" role="img" aria-label="日ごとの勉強時間">
+        {days.map((d) => {
+          const [, m, day] = d.day.split("-");
+          const total = d.vocab + d.listening;
+          return (
+            <div
+              key={d.day}
+              className="day"
+              data-tip={`${Number(m)}/${Number(day)}: 単語 ${minutes(d.vocab)}分 / リスニング ${minutes(d.listening)}分`}
+            >
+              <div className="day-plot">
+                {total >= 60 && <small className="day-total">{minutes(total)}</small>}
+                {d.listening > 0 && <span className="col time-listening" style={{ height: `${(d.listening / max) * 100}%` }} />}
+                {d.vocab > 0 && <span className="col time-vocab" style={{ height: `${(d.vocab / max) * 100}%` }} />}
+              </div>
+              <span className="day-label">{Number(day)}</span>
+            </div>
+          );
+        })}
+      </div>
+      <details className="table-view">
+        <summary>表で見る</summary>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">日</th>
+              <th scope="col">単語（分）</th>
+              <th scope="col">リスニング（分）</th>
+            </tr>
+          </thead>
+          <tbody>
+            {days.map((d) => (
+              <tr key={d.day}>
+                <th scope="row">{d.day}</th>
+                <td>{minutes(d.vocab)}</td>
+                <td>{minutes(d.listening)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </details>
     </>
   );
 }

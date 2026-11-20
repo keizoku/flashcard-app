@@ -5,6 +5,8 @@ import Link from "next/link";
 import CardDetails from "@/app/components/CardDetails";
 import SpeakButton from "@/app/components/SpeakButton";
 import { speak, stopSpeaking, useSpeechSettings } from "@/app/components/speech";
+import { useVocabTimer } from "@/app/components/studyTimer";
+import VideoPlayer from "@/app/components/VideoPlayer";
 import { HighlightedMany } from "@/app/components/Highlighted";
 import { displayTarget } from "@/lib/format";
 import { formatTime, videoUrl } from "@/lib/youtube";
@@ -20,6 +22,9 @@ export default function StudySession({ deckId, cards, studyAll }) {
   const [error, setError] = useState(null);
   // 答えるたびに、答える前の状態を積んでおく（前のカードに戻るため）
   const [history, setHistory] = useState([]);
+  // 答えの面で「動画のこの場面」を押したカード（その場で動画を再生する）と、再生しているか
+  const [videoCardId, setVideoCardId] = useState(null);
+  const [videoPlaying, setVideoPlaying] = useState(false);
 
   const card = queue[0];
   const speech = useSpeechSettings();
@@ -30,6 +35,8 @@ export default function StudySession({ deckId, cards, studyAll }) {
     return () => stopSpeaking();
   }, [card?.id, card?.retry, speech.autoRead]); // eslint-disable-line react-hooks/exhaustive-deps
   const done = !card;
+  // 単語を覚えた時間を測る。動画を再生している間はリスニングとして数えるので、こちらは止める。終わったあとも止める
+  useVocabTimer({ deckId, paused: done || videoPlaying });
   const total = cards.length;
   const firstTimeLeft = queue.filter((c) => !c.retry).length;
 
@@ -160,10 +167,28 @@ export default function StudySession({ deckId, cards, studyAll }) {
             <CardDetails card={card} />
             {card.video_id && (
               <p className="card-actions">
+                <button
+                  type="button"
+                  className="link-button"
+                  onClick={() => setVideoCardId(videoCardId === card.id ? null : card.id)}
+                >
+                  {videoCardId === card.id ? "動画を閉じる" : "▶ 動画のこの場面"}
+                  {card.start_seconds !== null && `（${formatTime(card.start_seconds)}）`}
+                </button>
                 <a href={videoUrl(card.video_id, card.start_seconds)} target="_blank" rel="noreferrer">
-                  ▶ 動画のこの場面{card.start_seconds !== null && `（${formatTime(card.start_seconds)}）`}
+                  YouTube で開く
                 </a>
               </p>
+            )}
+            {card.video_id && videoCardId === card.id && (
+              <VideoPlayer
+                key={card.id}
+                videoId={card.video_id}
+                deckId={deckId}
+                start={card.start_seconds}
+                autoplay
+                onPlayingChange={setVideoPlaying}
+              />
             )}
           </div>
         ) : (

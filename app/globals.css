@@ -575,6 +575,28 @@ kbd {
 .day-total { font-size: 0.7rem; color: var(--muted); }
 .day-label { font-size: 0.7rem; color: var(--muted); text-align: center; padding-top: 4px; }
 
+/* 勉強時間（単語 = 青、リスニング = だいだい。色の見え方が違う人にも区別しやすい組み合わせ） */
+:root { --time-vocab: #2a78d6; --time-listening: #d0731a; }
+@media (prefers-color-scheme: dark) {
+  :root { --time-vocab: #4a90e2; --time-listening: #e8913a; }
+}
+.time-vocab { background: var(--time-vocab); }
+.time-listening { background: var(--time-listening); }
+.manual-time-head { font-size: 1rem; margin: 20px 0 4px; }
+.manual-time-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 12px; margin: 8px 0; }
+.manual-time-form label { display: grid; gap: 4px; font-size: 0.85rem; color: var(--muted); }
+.manual-time-form input { width: 7em; }
+.manual-time-form .error, .manual-time-form .success { flex-basis: 100%; margin: 0; }
+.manual-time-list { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 4px; font-size: 0.9rem; }
+.manual-time-list li { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+
+/* アプリの中の動画プレーヤー（16:9） */
+.video-player { margin: 12px 0; }
+.video-frame { position: relative; width: 100%; max-width: 720px; aspect-ratio: 16 / 9; background: #000; border-radius: 10px; overflow: hidden; }
+.video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.deck-video { margin: 16px 0 24px; scroll-margin-top: 12px; }
+.deck-video .note { margin: 4px 0 0; }
+
 .hard-list { margin: 0; padding-left: 1.4em; display: grid; gap: 6px; }
 .hard-list li { line-height: 1.5; }
 .hard-word { font-weight: 600; color: var(--text); margin-right: 8px; }

@@ -9,12 +9,15 @@ import SpeakButton from "@/app/components/SpeakButton";
 import { displayTarget } from "@/lib/format";
 import { formatTime, videoUrl } from "@/lib/youtube";
 import { deleteCards } from "./actions";
+import { useDeckVideo } from "./DeckVideo";
 
 // カードの一覧。チェックを付けて、まとめて削除できる
 export default function CardList({ deckId, cards }) {
   const [selected, setSelected] = useState(() => new Set());
   const [error, setError] = useState(null);
   const [pending, startTransition] = useTransition();
+  // デッキの画面に動画があれば、その動画のカードは、ここで再生する
+  const deckVideo = useDeckVideo();
 
   const allSelected = cards.length > 0 && selected.size === cards.length;
 
@@ -83,7 +86,16 @@ export default function CardList({ deckId, cards }) {
                 <SpeakButton text={card.front} />
                 <SpeakButton text={card.front} slow />
                 {card.video_id && (
-                  <a href={videoUrl(card.video_id, card.start_seconds)} target="_blank" rel="noreferrer">
+                  <a
+                    href={videoUrl(card.video_id, card.start_seconds)}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => {
+                      if (deckVideo?.videoId !== card.video_id) return;
+                      e.preventDefault();
+                      deckVideo.playAt(card.start_seconds ?? 0);
+                    }}
+                  >
                     ▶ 動画のこの場面{card.start_seconds !== null && `（${formatTime(card.start_seconds)}）`}
                   </a>
                 )}

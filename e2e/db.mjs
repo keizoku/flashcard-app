@@ -26,7 +26,7 @@ export async function closeDb() {
 
 const TABLES = [
   "review_logs", "card_targets", "cards", "deck_tags", "tags", "decks",
-  "known_words", "settings", "email_tokens", "user_sessions", "users", "videos",
+  "known_words", "settings", "email_tokens", "user_sessions", "users", "videos", "study_time",
 ];
 
 export async function resetDb() {

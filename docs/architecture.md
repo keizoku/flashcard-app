@@ -58,8 +58,9 @@ app/                 画面（Next.js App Router）
   cards/[id]/edit/   カードの編集・削除
   stories/new/       覚えた語で物語を作る
   settings/          レベル設定、「知ってる」の語、読み上げの設定
-  stats/             統計
-  components/        共通の部品（読み上げ、強調表示、タグなど）
+  stats/             統計（勉強時間と、手で時間を足すフォームも）
+  api/study-time/    画面から勉強時間を受け取る（POST。sendBeacon で送ってくる）
+  components/        共通の部品（読み上げ、強調表示、タグ、動画プレーヤー、勉強時間の計測など）
 lib/                 サーバー側のロジック（画面から独立。単体テストの主な対象）
 db/migrations/       テーブルの変更履歴（番号順）
 data/                単語の頻出度リスト・イディオムのリスト
@@ -123,6 +124,8 @@ sequenceDiagram
 | `review.js` | 記憶テストの間隔、覚え具合の区分 | |
 | `targets.js` | カードの覚えたい語（複数）の読み書き | ○ |
 | `tags.js` | タグの整形と保存 | ○ |
+| `studyTime.js` | 勉強時間の記録・手で足す・消す・集計 | ○ |
+| `studyClock.js` | 勉強時間の時計（操作・再生のあった間だけ数える）、時間の書き方。画面の部品から使う | |
 | `tagCandidates.js` | デッキの一覧で、さらに絞り込めるタグの候補（件数の多い順、同じ件数なら文字コード順）。画面の部品から使う | |
 | `story.js` / `storyPrompt.js` | 物語のプロンプト、答えからデッキを作る | ○ |
 | `recommend.js` | おすすめの動画（ほかの人が字幕付きでデッキにした動画を、自分のレベルで解析して並べる） | ○ |
@@ -130,7 +133,7 @@ sequenceDiagram
 | `youtube.js` / `videoTitle.js` / `format.js` / `levels.js` | 小さな道具 | |
 
 `import "server-only"` が付いたファイルは、ブラウザ側に入らない（Next.js がビルド時に止める）。
-`youtube.js` / `format.js` / `levels.js` / `review.js` / `videoFilter.js` / `tagCandidates.js` は画面の部品からも使う。
+`youtube.js` / `format.js` / `levels.js` / `review.js` / `videoFilter.js` / `tagCandidates.js` / `studyClock.js` は画面の部品からも使う。
 
 ## 外部とのつながり
 

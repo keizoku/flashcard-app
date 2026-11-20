@@ -10,6 +10,7 @@ import { attachTargets } from "@/lib/targets";
 import { videoUrl } from "@/lib/youtube";
 import AddCardForm from "./AddCardForm";
 import CardList from "./CardList";
+import DeckVideo from "./DeckVideo";
 import ExplainPanel from "./ExplainPanel";
 import StoryReader from "./StoryReader";
 
@@ -66,6 +67,37 @@ export default async function DeckPage({ params, searchParams }) {
   // 解説が足りないカード（例文・豆知識、または和訳の対応部分がない）
   const missingAi = cards.filter(needsExplanation).length;
 
+  // 理解度・カードの追加・カードの一覧（動画があれば、動画の下に出す）
+  const body = (
+      <>
+        {comprehension && (
+          <section className="comprehension-box">
+            <h2>
+              この動画の理解度 <span className="comprehension-percent">{comprehension.percent}%</span>
+            </h2>
+            <p className="note small">
+              字幕の {comprehension.total} 文のうち、{comprehension.understood} 文が全部わかります。
+              {comprehension.percent === 100
+                ? "クリアです！"
+                : "単語を覚えるほど増えます。100% でこの動画はクリアです。"}
+            </p>
+            <ComprehensionBar comprehension={comprehension} />
+          </section>
+        )}
+        {missingAi > 0 && <ExplainPanel deckId={deck.id} missingCount={missingAi} />}
+        <AddCardForm deckId={deck.id} />
+        <p className="note">カードをクリックすると答えが表示されます（{cards.length} 枚）</p>
+        {cards.length === 0 ? (
+          <p className="note">まだカードがありません。上のフォームから追加してください。</p>
+        ) : (
+          <CardList
+            deckId={deck.id}
+            cards={cards.map(({ ai_generated_at, ...c }) => c)}
+          />
+        )}
+      </>
+  );
+
   return (
     <main>
       <p className="back-link">
@@ -95,7 +127,7 @@ export default async function DeckPage({ params, searchParams }) {
         )}
         {deck.video_id && (
           <a href={videoUrl(deck.video_id)} target="_blank" rel="noreferrer" className="button-link">
-            ▶ 動画を開く
+            YouTube で開く
           </a>
         )}
         <Link href={`/decks/${deck.id}/edit`} className="button-link">
@@ -105,30 +137,12 @@ export default async function DeckPage({ params, searchParams }) {
       {isStory && storySentences.length > 0 && (
         <StoryReader title={deck.name.replace(/^物語:\s*/, "")} sentences={storySentences} />
       )}
-      {comprehension && (
-        <section className="comprehension-box">
-          <h2>
-            この動画の理解度 <span className="comprehension-percent">{comprehension.percent}%</span>
-          </h2>
-          <p className="note small">
-            字幕の {comprehension.total} 文のうち、{comprehension.understood} 文が全部わかります。
-            {comprehension.percent === 100
-              ? "クリアです！"
-              : "単語を覚えるほど増えます。100% でこの動画はクリアです。"}
-          </p>
-          <ComprehensionBar comprehension={comprehension} />
-        </section>
-      )}
-      {missingAi > 0 && <ExplainPanel deckId={deck.id} missingCount={missingAi} />}
-      <AddCardForm deckId={deck.id} />
-      <p className="note">カードをクリックすると答えが表示されます（{cards.length} 枚）</p>
-      {cards.length === 0 ? (
-        <p className="note">まだカードがありません。上のフォームから追加してください。</p>
+      {deck.video_id && !isStory ? (
+        <DeckVideo videoId={deck.video_id} deckId={deck.id}>
+          {body}
+        </DeckVideo>
       ) : (
-        <CardList
-          deckId={deck.id}
-          cards={cards.map(({ ai_generated_at, ...c }) => c)}
-        />
+        body
       )}
     </main>
   );
