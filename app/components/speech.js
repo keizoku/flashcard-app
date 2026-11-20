@@ -6,7 +6,9 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 // 声と速さは、端末ごとに使える声が違うので、ブラウザ（localStorage）に保存する
 
 const KEY = "flashcard-speech";
-const DEFAULTS = { voice: "", rate: 1, autoRead: false };
+// autoReadFront: 記憶テストで、カードが出たら（答えを考える表の面で）読み上げる。初めは する
+// （前の設定 autoRead は使わない。初めは しない だったので、この設定で初めから読み上げるように名前を変えた）
+const DEFAULTS = { voice: "", rate: 1, autoReadFront: true };
 
 export function isSpeechSupported() {
   return typeof window !== "undefined" && "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
@@ -24,6 +26,12 @@ function readSettings() {
     cached = { ...DEFAULTS };
   }
   return cached;
+}
+
+// 今の設定（このブラウザに保存したもの）。画面の最初の表示では useSpeechSettings が初めの値を返すので、
+// 読み上げるかどうかを決めるときは、こちらで本当の値を見る
+export function getSpeechSettings() {
+  return readSettings();
 }
 
 export function saveSpeechSettings(patch) {
@@ -97,17 +105,47 @@ function pickVoice(name) {
 }
 
 // ---- 読み上げ -------------------------------------------------------------
+// Chrome では、読み上げ中に止めた（cancel）直後に読み上げる（speak）と、その読み上げが消えることがある。
+// 止めたあとは少し待ってから読み上げる。待っている間に別の読み上げ・停止が来たら、待っていた方はやめる
+const AFTER_CANCEL_MS = 80;
+let waiting = null;
+let stoppedAt = -Infinity; // 読み上げ中のものを最後に止めた時刻
+
+// 前の読み上げを止める。止めたあと少し待つ必要があるか
+// （読み上げ中だった・待ちがあった・少し前に読み上げ中のものを止めたばかり）を返す
+function cancelAll() {
+  const synth = window.speechSynthesis;
+  const now = Date.now();
+  const busy = synth.speaking || synth.pending || waiting !== null;
+  if (busy) stoppedAt = now;
+  clearTimeout(waiting);
+  waiting = null;
+  synth.cancel();
+  return busy || now - stoppedAt < AFTER_CANCEL_MS;
+}
+
+function startAfterCancel(busy, start) {
+  if (!busy) return start();
+  waiting = setTimeout(() => {
+    waiting = null;
+    start();
+  }, AFTER_CANCEL_MS);
+}
+
 export function speak(text, { rate } = {}) {
   if (!isSpeechSupported() || !text) return;
   const settings = readSettings();
   const synth = window.speechSynthesis;
-  synth.cancel(); // 前の読み上げは止める
+  const busy = cancelAll(); // 前の読み上げは止める
   const u = new SpeechSynthesisUtterance(text);
   const voice = pickVoice(settings.voice);
   if (voice) u.voice = voice;
   u.lang = voice?.lang ?? "en-US";
   u.rate = rate ?? settings.rate;
-  synth.speak(u);
+  startAfterCancel(busy, () => {
+    synth.resume?.(); // 一時停止のまま止まっていることがある（Chrome）
+    synth.speak(u);
+  });
 }
 
 // 複数の文を順に読み上げる（物語の全文など）。onSentence(i) は i 番目を読み始めたとき、onDone は最後まで読んだとき
@@ -115,19 +153,23 @@ export function speakSequence(texts, { onSentence, onDone } = {}) {
   if (!isSpeechSupported() || texts.length === 0) return;
   const settings = readSettings();
   const synth = window.speechSynthesis;
-  synth.cancel();
+  const busy = cancelAll();
   const voice = pickVoice(settings.voice);
-  texts.forEach((text, i) => {
-    const u = new SpeechSynthesisUtterance(text);
-    if (voice) u.voice = voice;
-    u.lang = voice?.lang ?? "en-US";
-    u.rate = settings.rate;
-    u.onstart = () => onSentence?.(i);
-    if (i === texts.length - 1) u.onend = () => onDone?.();
-    synth.speak(u);
+  startAfterCancel(busy, () => {
+    synth.resume?.();
+    texts.forEach((text, i) => {
+      const u = new SpeechSynthesisUtterance(text);
+      if (voice) u.voice = voice;
+      u.lang = voice?.lang ?? "en-US";
+      u.rate = settings.rate;
+      u.onstart = () => onSentence?.(i);
+      if (i === texts.length - 1) u.onend = () => onDone?.();
+      synth.speak(u);
+    });
   });
 }
 
+// 読み上げを止める（待っている読み上げもやめる）
 export function stopSpeaking() {
-  if (isSpeechSupported()) window.speechSynthesis.cancel();
+  if (isSpeechSupported()) cancelAll();
 }

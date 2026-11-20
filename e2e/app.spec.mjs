@@ -444,3 +444,118 @@ test("UI-15 勉強時間を手で足す: 統計の画面で足すと今日の時
   await expect(page.locator(".manual-time-list")).toHaveCount(0);
   await shot(page, testInfo, "2. 取り消すと 0分に戻った");
 });
+
+// 読み上げ（Web Speech API）の偽物。読み上げた文と、止めた回数を残す
+const FAKE_SPEECH = `
+window.__spoken = [];
+window.__speaking = false;
+window.SpeechSynthesisUtterance = class { constructor(text) { this.text = text; } };
+Object.defineProperty(window, "speechSynthesis", {
+  value: {
+    speak(u) { window.__spoken.push(u.text); window.__speaking = true; },
+    cancel() { window.__speaking = false; },
+    getVoices() { return []; },
+    addEventListener() {},
+    removeEventListener() {},
+  },
+});
+`;
+
+test("UI-16 記憶テスト: カードが出たら（答えを考える表の面で）英文を自動で読み上げる。→ でめくると読み上げを止める。答えの面では読み上げない。設定で止められる", async ({ page, context }, testInfo) => {
+  const deck = await createDeck(me.id, { name: "読み上げのデッキ" });
+  await createCard(deck, { front: "I like to walk in the park.", word: "walk" });
+  await createCard(deck, { front: "The weather is very good today.", word: "weather" });
+  await loginAs(context, me);
+  await page.addInitScript(FAKE_SPEECH);
+  await page.goto(`/decks/${deck}/study`);
+  const spoken = () => page.evaluate(() => window.__spoken);
+  await expect(page.locator(".study-front")).toHaveText("I like to walk in the park.");
+  await expect.poll(spoken).toEqual(["I like to walk in the park."]); // 初めの設定で読み上げる
+  expect(await page.evaluate(() => window.__speaking)).toBe(true);
+  await shot(page, testInfo, "1. カードが出ると、英文を読み上げた");
+
+  await page.keyboard.press("ArrowRight"); // わかった → めくる
+  await expect(page.locator(".study-back")).toBeVisible();
+  expect(await page.evaluate(() => window.__speaking)).toBe(false); // 止めた
+  await page.waitForTimeout(300);
+  expect(await spoken()).toEqual(["I like to walk in the park."]); // 答えの面では読み上げない
+
+  await page.keyboard.press("ArrowRight"); // 覚えている → 次のカード
+  await expect(page.locator(".study-front")).toHaveText("The weather is very good today.");
+  await expect.poll(spoken).toEqual(["I like to walk in the park.", "The weather is very good today."]);
+
+  // 設定で「カードが出たら読み上げる」を外すと、読み上げない
+  await page.addInitScript(() => localStorage.setItem("flashcard-speech", JSON.stringify({ autoReadFront: false })));
+  await page.goto(`/decks/${deck}/study`);
+  await expect(page.locator(".study-front")).toBeVisible();
+  await page.waitForTimeout(300);
+  expect(await spoken()).toEqual([]);
+});
+
+// Chrome と同じ癖を持つ読み上げの偽物: 読み上げ中に止めた直後（同じ処理の中）に読み上げると、その読み上げは消える
+const FAKE_SPEECH_CHROME = `
+window.__spoken = [];
+let speaking = false;
+let justCancelled = false;
+window.SpeechSynthesisUtterance = class { constructor(text) { this.text = text; } };
+Object.defineProperty(window, "speechSynthesis", {
+  value: {
+    get speaking() { return speaking; },
+    get pending() { return false; },
+    get paused() { return false; },
+    speak(u) {
+      if (justCancelled) return; // 消える
+      window.__spoken.push(u.text);
+      speaking = true;
+    },
+    cancel() {
+      if (speaking) {
+        justCancelled = true;
+        setTimeout(() => { justCancelled = false; }, 0);
+      }
+      speaking = false;
+    },
+    resume() {},
+    getVoices() { return []; },
+    addEventListener() {},
+    removeEventListener() {},
+  },
+});
+`;
+
+test("UI-17 記憶テスト: 次のカードが出ると必ず読み上げる（読み上げ中に前のカードに戻っても・同じカードがもう一度出ても）", async ({ page, context }, testInfo) => {
+  const deck = await createDeck(me.id, { name: "読み上げのデッキ" });
+  await createCard(deck, { front: "I like to walk in the park.", word: "walk" });
+  await createCard(deck, { front: "The weather is very good today.", word: "weather" });
+  await loginAs(context, me);
+  await page.addInitScript(FAKE_SPEECH_CHROME);
+  await page.goto(`/decks/${deck}/study`);
+  const spoken = () => page.evaluate(() => window.__spoken);
+  await expect.poll(spoken).toEqual(["I like to walk in the park."]);
+
+  await page.keyboard.press("ArrowRight"); // めくる（読み上げを止める）
+  await page.keyboard.press("ArrowRight"); // 覚えている → 次のカードを読み上げる
+  await expect.poll(spoken).toEqual(["I like to walk in the park.", "The weather is very good today."]);
+
+  // 読み上げ中に ← で前のカードに戻る（止めた直後に読み上げると消える Chrome の癖があっても、読み上げる）
+  await page.keyboard.press("ArrowLeft");
+  await expect(page.locator(".study-front")).toHaveText("I like to walk in the park.");
+  await expect.poll(spoken).toEqual([
+    "I like to walk in the park.",
+    "The weather is very good today.",
+    "I like to walk in the park.",
+  ]);
+
+  // 最後のカードで ← を続けると、同じカードが「もう一度」で何度も出る。出るたびに読み上げる
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight"); // 1枚目は覚えている → 残りは2枚目だけ
+  await expect(page.locator(".study-front")).toHaveText("The weather is very good today.");
+  for (let i = 0; i < 2; i++) {
+    const before = (await spoken()).length;
+    await page.keyboard.press("ArrowRight"); // めくる
+    await page.keyboard.press("ArrowLeft"); // 覚えていない
+    await expect(page.locator(".study-card .tag")).toHaveText("もう一度");
+    await expect.poll(spoken).toHaveLength(before + 1);
+  }
+  await shot(page, testInfo, "1. 同じカードがもう一度出ても、そのたびに読み上げた");
+});

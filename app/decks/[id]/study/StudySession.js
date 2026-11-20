@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import CardDetails from "@/app/components/CardDetails";
 import SpeakButton from "@/app/components/SpeakButton";
-import { speak, stopSpeaking, useSpeechSettings } from "@/app/components/speech";
+import { getSpeechSettings, speak, stopSpeaking, useSpeechSettings } from "@/app/components/speech";
 import { useVocabTimer } from "@/app/components/studyTimer";
 import VideoPlayer from "@/app/components/VideoPlayer";
 import { HighlightedMany } from "@/app/components/Highlighted";
@@ -25,15 +25,21 @@ export default function StudySession({ deckId, cards, studyAll }) {
   // 答えの面で「動画のこの場面」を押したカード（その場で動画を再生する）と、再生しているか
   const [videoCardId, setVideoCardId] = useState(null);
   const [videoPlaying, setVideoPlaying] = useState(false);
+  // カードを出した回数。同じカードがもう一度出たとき（「もう一度」で続けて出るとき）も、出たことが分かるように
+  const [shown, setShown] = useState(0);
 
   const card = queue[0];
   const speech = useSpeechSettings();
 
-  // 「カードが出たら自動で読み上げる」設定なら、表の面を出したときに読み上げる
+  // 「カードが出たら自動で読み上げる」設定なら、表の面（答えを考える面）を出したときに読み上げる
   useEffect(() => {
-    if (card && speech.autoRead) speak(card.front);
+    if (card && getSpeechSettings().autoReadFront) speak(card.front);
     return () => stopSpeaking();
-  }, [card?.id, card?.retry, speech.autoRead]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [shown, card?.id, speech.autoReadFront]); // eslint-disable-line react-hooks/exhaustive-deps
+  // めくったら（→ = わかった）読み上げを止める。答えの面では、自動では読み上げない（↑ で読み上げられる）
+  useEffect(() => {
+    if (revealed) stopSpeaking();
+  }, [revealed]);
   const done = !card;
   // 単語を覚えた時間を測る。動画を再生している間はリスニングとして数えるので、こちらは止める。終わったあとも止める
   useVocabTimer({ deckId, paused: done || videoPlaying });
@@ -43,6 +49,7 @@ export default function StudySession({ deckId, cards, studyAll }) {
   const answer = useCallback(
     (remembered) => {
       if (!card || !revealed) return;
+      stopSpeaking(); // 答えの面で ↑ で読み上げていたら止める
       // 記録は裏で送り、画面はすぐ次のカードへ
       const saving = recordReview(card.id, remembered).then(
         (r) => {
@@ -57,6 +64,7 @@ export default function StudySession({ deckId, cards, studyAll }) {
       setHistory((h) => [...h, { queue, counts, saving }]);
       setCounts((c) => (remembered ? { ...c, remembered: c.remembered + 1 } : { ...c, forgot: c.forgot + 1 }));
       setQueue((q) => (remembered ? q.slice(1) : [...q.slice(1), { ...card, retry: true }]));
+      setShown((n) => n + 1);
       setRevealed(false);
     },
     [card, revealed, queue, counts]
@@ -69,6 +77,7 @@ export default function StudySession({ deckId, cards, studyAll }) {
     setHistory((h) => h.slice(0, -1));
     setQueue(last.queue);
     setCounts(last.counts);
+    setShown((n) => n + 1);
     setRevealed(false);
     setError(null);
     last.saving

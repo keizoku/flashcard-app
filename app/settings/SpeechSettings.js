@@ -44,10 +44,10 @@ export default function SpeechSettings() {
       <label className="checkbox-label">
         <input
           type="checkbox"
-          checked={settings.autoRead}
-          onChange={(e) => saveSpeechSettings({ autoRead: e.target.checked })}
+          checked={settings.autoReadFront}
+          onChange={(e) => saveSpeechSettings({ autoReadFront: e.target.checked })}
         />
-        学習画面で、カードが出たら自動で読み上げる
+        学習画面で、カードが出たら自動で読み上げる（→ でめくると止まる）
       </label>
       <button type="button" className="secondary-button" onClick={() => speak(SAMPLE)}>
         試しに読み上げる
