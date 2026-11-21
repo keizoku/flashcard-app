@@ -5,6 +5,7 @@ import { needsExplanation } from "@/lib/cardPrompts";
 import { requireUser } from "@/lib/auth";
 import { analyzeWithState, loadContext } from "@/lib/comprehension";
 import { pool } from "@/lib/db";
+import { ensureScenes } from "@/lib/scenes";
 import { DUE_CONDITION } from "@/lib/review";
 import { attachTargets } from "@/lib/targets";
 import { videoUrl } from "@/lib/youtube";
@@ -13,6 +14,7 @@ import CardList from "./CardList";
 import DeckVideo from "./DeckVideo";
 import ExplainPanel from "./ExplainPanel";
 import StoryReader from "./StoryReader";
+import StoryScenes from "./StoryScenes";
 
 // リクエストのたびに DB から読み直す
 export const dynamic = "force-dynamic";
@@ -57,6 +59,9 @@ export default async function DeckPage({ params, searchParams }) {
         };
       })
     : [];
+
+  // 物語の場面（絵を付けるまとまり）。初めて開いたときに作る
+  const scenes = isStory ? ((await ensureScenes(user.id, deck.id)) ?? []) : [];
 
   const { rows: dueRows } = await pool.query(
     `SELECT COUNT(*)::int AS n FROM cards WHERE deck_id = $1 AND ${DUE_CONDITION}`,
@@ -135,8 +140,14 @@ export default async function DeckPage({ params, searchParams }) {
         </Link>
       </p>
       {isStory && storySentences.length > 0 && (
-        <StoryReader title={deck.name.replace(/^物語:\s*/, "")} sentences={storySentences} />
+        <StoryReader
+          deckId={deck.id}
+          title={deck.name.replace(/^物語:\s*/, "")}
+          sentences={storySentences}
+          scenes={scenes.map((sc) => ({ first: sc.first, last: sc.last, image: sc.hasImage ? `/api/scenes/${sc.id}/image?v=${sc.version}` : null }))}
+        />
       )}
+      {isStory && scenes.length > 0 && <StoryScenes scenes={scenes} sentences={storySentences.map((x) => ({ text: x.text }))} />}
       {deck.video_id && !isStory ? (
         <DeckVideo videoId={deck.video_id} deckId={deck.id}>
           {body}

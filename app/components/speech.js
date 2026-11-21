@@ -132,7 +132,8 @@ function startAfterCancel(busy, start) {
   }, AFTER_CANCEL_MS);
 }
 
-export function speak(text, { rate } = {}) {
+// onEnd: 読み終わったとき（止めたときは呼ばないことがあるので、呼ぶ側で確かめる）
+export function speak(text, { rate, onEnd } = {}) {
   if (!isSpeechSupported() || !text) return;
   const settings = readSettings();
   const synth = window.speechSynthesis;
@@ -142,6 +143,7 @@ export function speak(text, { rate } = {}) {
   if (voice) u.voice = voice;
   u.lang = voice?.lang ?? "en-US";
   u.rate = rate ?? settings.rate;
+  if (onEnd) u.onend = onEnd;
   startAfterCancel(busy, () => {
     synth.resume?.(); // 一時停止のまま止まっていることがある（Chrome）
     synth.speak(u);

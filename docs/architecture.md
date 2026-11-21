@@ -51,7 +51,7 @@ app/                 画面（Next.js App Router）
   actions.js         デッキの作成・削除、カードの追加
   auth/              ログイン・登録などの Server Action とフォーム
   login/ signup/ verify/ resend/ forgot-password/ reset-password/ account/
-  decks/[id]/        デッキ画面（カード一覧、解説の取り込み、物語の通し読み）
+  decks/[id]/        デッキ画面（カード一覧、解説の取り込み、動画プレーヤー、物語の通し読み・スライド）
     import/          字幕の解析と、候補の文からカードを登録
     study/           記憶テスト
     edit/            デッキの編集・削除
@@ -60,6 +60,7 @@ app/                 画面（Next.js App Router）
   settings/          レベル設定、「知ってる」の語、読み上げの設定
   stats/             統計（勉強時間と、手で時間を足すフォームも）
   api/study-time/    画面から勉強時間を受け取る（POST。sendBeacon で送ってくる）
+  api/scenes/[id]/image/  物語の場面の絵を見る（GET）・取り込む（POST）。自分の場面だけ
   components/        共通の部品（読み上げ、強調表示、タグ、動画プレーヤー、勉強時間の計測など）
 lib/                 サーバー側のロジック（画面から独立。単体テストの主な対象）
 db/migrations/       テーブルの変更履歴（番号順）
@@ -124,6 +125,9 @@ sequenceDiagram
 | `review.js` | 記憶テストの間隔、覚え具合の区分 | |
 | `targets.js` | カードの覚えたい語（複数）の読み書き | ○ |
 | `tags.js` | タグの整形と保存 | ○ |
+| `scenes.js` | 物語の場面（作る・指示文）と絵（保存・自動で作る・見る・消す） | ○ |
+| `imageGen.js` | 無料の画像生成サービス（Pollinations、キー不要）で絵を作る | |
+| `sceneUtils.js` | 場面の分け方、絵の指示文、自動で作る URL、画像の種類の見分け。画面の部品からも使う | |
 | `studyTime.js` | 勉強時間の記録・手で足す・消す・集計 | ○ |
 | `studyClock.js` | 勉強時間の時計（操作・再生のあった間だけ数える）、時間の書き方。画面の部品から使う | |
 | `tagCandidates.js` | デッキの一覧で、さらに絞り込めるタグの候補（件数の多い順、同じ件数なら文字コード順）。画面の部品から使う | |
@@ -133,7 +137,7 @@ sequenceDiagram
 | `youtube.js` / `videoTitle.js` / `format.js` / `levels.js` | 小さな道具 | |
 
 `import "server-only"` が付いたファイルは、ブラウザ側に入らない（Next.js がビルド時に止める）。
-`youtube.js` / `format.js` / `levels.js` / `review.js` / `videoFilter.js` / `tagCandidates.js` / `studyClock.js` は画面の部品からも使う。
+`youtube.js` / `format.js` / `levels.js` / `review.js` / `videoFilter.js` / `tagCandidates.js` / `studyClock.js` / `sceneUtils.js` は画面の部品からも使う。
 
 ## 外部とのつながり
 

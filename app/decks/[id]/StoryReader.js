@@ -3,13 +3,16 @@
 import { useEffect, useState } from "react";
 import { HighlightedMany, HighlightedParts } from "@/app/components/Highlighted";
 import { isSpeechSupported, speak, speakSequence, stopSpeaking } from "@/app/components/speech";
+import StorySlides from "./StorySlides";
 
 // 物語を通して読む。使った単語を強調し、和訳の表示切り替えと、全文の読み上げができる
 // sentences: [{ text, translation, forms: [英文の中の語], parts: [和訳の中の部分] }]
-export default function StoryReader({ title, sentences }) {
+// scenes: [{ first, last, image（絵の URL か null） }]（スライドに場面の絵を出す）
+export default function StoryReader({ deckId, title, sentences, scenes = [] }) {
   const [showTranslation, setShowTranslation] = useState(false);
   const [reading, setReading] = useState(-1); // 読み上げ中の文の番号（-1 = 止まっている）
   const [supported, setSupported] = useState(false);
+  const [slides, setSlides] = useState(false); // スライドを開いているか
   useEffect(() => {
     setSupported(isSpeechSupported());
     return () => stopSpeaking();
@@ -32,6 +35,17 @@ export default function StoryReader({ title, sentences }) {
       <div className="story-head">
         <h2>{title}</h2>
         <div className="actions-row">
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={() => {
+              stopSpeaking();
+              setReading(-1);
+              setSlides(true);
+            }}
+          >
+            スライドで見る
+          </button>
           {supported && (
             <button type="button" className="secondary-button" onClick={readAll}>
               {reading >= 0 ? "■ 止める" : "▶ 全文を読み上げる"}
@@ -64,6 +78,7 @@ export default function StoryReader({ title, sentences }) {
           </p>
         ))}
       </div>
+      {slides && <StorySlides deckId={deckId} title={title} sentences={sentences} scenes={scenes} onClose={() => setSlides(false)} />}
     </section>
   );
 }

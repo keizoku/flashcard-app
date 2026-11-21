@@ -22,6 +22,7 @@ erDiagram
   videos |o..o{ decks : "video_id（外部キーではない）"
   users ||--o{ study_time : "勉強時間"
   decks |o--o{ study_time : "デッキを消しても記録は残る"
+  decks ||--o{ story_scenes : "物語の場面と絵"
 ```
 
 - ユーザーを消すと、そのユーザーのデッキ・カード・設定などはすべて消える（`ON DELETE CASCADE`）
@@ -60,6 +61,7 @@ erDiagram
 | 015_videos.sql | おすすめの動画のための、YouTube の動画の情報（videos） |
 | 016_videos_oembed.sql | 動画の情報を API キーなし（oEmbed）で取る形に（公開の状態・長さ・埋め込みの列を消し、available を足す） |
 | 017_study_time.sql | 勉強時間（study_time） |
+| 018_story_scenes.sql | 物語の場面と、場面の絵（story_scenes） |
 
 決まり:
 - 当てたファイルは書き換えない。直すときは次の番号のファイルを足す

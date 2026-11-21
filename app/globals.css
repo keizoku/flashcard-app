@@ -784,6 +784,63 @@ kbd {
 .story-en:hover { text-decoration: underline dotted; text-underline-offset: 4px; }
 .story-ja { display: block; font-size: 0.85rem; color: var(--muted); }
 
+/* 物語の場面の絵 */
+.scenes { margin: 16px 0 24px; }
+.scenes > summary { cursor: pointer; font-weight: 600; margin-bottom: 8px; }
+.scene-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
+.scene { display: grid; grid-template-columns: minmax(120px, 200px) 1fr; gap: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+@media (max-width: 560px) { .scene { grid-template-columns: 1fr; } }
+.scene-image { aspect-ratio: 16 / 9; border-radius: 8px; overflow: hidden; background: var(--bg); display: flex; align-items: center; justify-content: center; }
+.scene-image img { width: 100%; height: 100%; object-fit: cover; }
+.scene-noimage { font-size: 0.8rem; color: var(--muted); }
+.scene-body { min-width: 0; display: grid; gap: 6px; }
+.scene-head, .scene-first { margin: 0; }
+.scene-first { font-size: 0.9rem; color: var(--muted); overflow-wrap: anywhere; }
+.scene-prompt { display: grid; gap: 4px; font-size: 0.8rem; color: var(--muted); }
+.scene-prompt textarea { font-size: 0.85rem; width: 100%; }
+.scene-actions { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }
+
+/* 物語のスライド（画面いっぱいに重ねる） */
+.slides {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  outline: none;
+}
+.slides-bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 16px; }
+.slides-bar-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.slide-count { font-size: 0.9rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.slide-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+  text-align: center;
+  overflow-y: auto;
+  cursor: pointer;
+}
+.slide-title { margin: 0; font-size: clamp(1.8rem, 6vw, 3.2rem); }
+.slide-sentence { margin: 0; font-size: clamp(1.5rem, 5vw, 2.8rem); line-height: 1.4; font-weight: 400; overflow-wrap: anywhere; }
+.slide-ja { margin: 0; font-size: clamp(1rem, 3vw, 1.4rem); color: var(--muted); }
+.slide-words { margin: 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; color: var(--muted); }
+.slide-image { max-width: 100%; max-height: 52vh; border-radius: 12px; object-fit: contain; box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12); }
+.slide-stage.with-image { justify-content: flex-start; padding-top: 8px; }
+.slide-stage.with-image .slide-sentence { font-size: clamp(1.2rem, 3.6vw, 2.1rem); }
+.slide-preload { display: none; }
+.slides-controls { display: flex; justify-content: center; gap: 12px; padding: 12px 16px 16px; }
+.slides-progress { height: 4px; background: var(--border); }
+.slides-progress > div { height: 100%; background: var(--target); transition: width 0.3s; }
+
 /* ログイン・登録 */
 .site-header .nav-account {
   max-width: 14em;

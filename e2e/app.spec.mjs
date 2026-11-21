@@ -559,3 +559,135 @@ test("UI-17 記憶テスト: 次のカードが出ると必ず読み上げる（
   }
   await shot(page, testInfo, "1. 同じカードがもう一度出ても、そのたびに読み上げた");
 });
+
+// 読み上げの偽物（読み終わりも起こす）。読み上げると 300 ミリ秒後に「読み終わった」になる
+const FAKE_SPEECH_WITH_END = `
+window.__spoken = [];
+let current = null;
+window.SpeechSynthesisUtterance = class { constructor(text) { this.text = text; } };
+Object.defineProperty(window, "speechSynthesis", {
+  value: {
+    get speaking() { return current !== null; },
+    get pending() { return false; },
+    get paused() { return false; },
+    speak(u) {
+      window.__spoken.push(u.text);
+      current = u;
+      setTimeout(() => { if (current === u) { current = null; u.onend && u.onend(); } }, 300);
+    },
+    cancel() { current = null; },
+    resume() {},
+    getVoices() { return []; },
+    addEventListener() {},
+    removeEventListener() {},
+  },
+});
+`;
+
+test("UI-18 物語のスライド: 1文ずつ大きく出し、使った単語を強調する。自動再生で読み上げて次へ進む。再生した時間はリスニングとして記録する", async ({ page, context }, testInfo) => {
+  const sentences = [
+    { text: "A fox walked into the quiet forest.", translation: "キツネが静かな森に歩いて入った。" },
+    { text: "It found a tiny glowing stone.", translation: "小さな光る石を見つけた。" },
+  ];
+  const { rows } = await db().query(
+    "INSERT INTO decks (user_id, name, kind, sentences) VALUES ($1, '物語: The Fox', 'story', $2) RETURNING id",
+    [me.id, JSON.stringify(sentences)]
+  );
+  const deck = rows[0].id;
+  await createCard(deck, { front: sentences[0].text, word: "quiet" });
+  await createCard(deck, { front: sentences[1].text, word: "glowing" });
+  await loginAs(context, me);
+  await page.addInitScript(FAKE_SPEECH_WITH_END);
+  await page.goto(`/decks/${deck}`);
+
+  await page.getByRole("button", { name: "スライドで見る" }).click();
+  const slides = page.getByRole("dialog", { name: "物語のスライド" });
+  await expect(slides).toBeVisible();
+  await expect(slides.locator(".slide-title")).toHaveText("The Fox"); // 1枚目は題名
+  await expect(slides).toContainText("quiet");
+  await expect(slides.locator(".slide-count")).toHaveText("0 / 2");
+  await shot(page, testInfo, "1. スライドを開くと、題名と使った単語が出る");
+
+  await page.keyboard.press("ArrowRight");
+  await expect(slides.locator(".slide-sentence")).toHaveText(sentences[0].text);
+  await expect(slides.locator(".slide-sentence mark")).toHaveText("quiet");
+  await expect(slides.locator(".slide-count")).toHaveText("1 / 2");
+  await expect(slides.locator(".slide-ja")).toHaveCount(0); // 和訳は初めは出さない
+  await slides.getByLabel("和訳を表示").check();
+  await expect(slides.locator(".slide-ja")).toHaveText(sentences[0].translation);
+  await shot(page, testInfo, "2. 1文ずつ大きく出し、使った単語を強調する。和訳も出せる");
+
+  // 自動再生: 今の文を読み上げ、読み終わったら次の文へ。最後の文を読み終わったら止まる
+  await slides.getByRole("button", { name: "▶ 自動再生" }).click();
+  await expect.poll(() => page.evaluate(() => window.__spoken)).toEqual([sentences[0].text, sentences[1].text]);
+  await expect(slides.locator(".slide-sentence")).toHaveText(sentences[1].text);
+  await expect(slides.getByRole("button", { name: "▶ 自動再生" })).toBeVisible({ timeout: 10_000 });
+  await shot(page, testInfo, "3. 自動再生で、読み上げながら最後の文まで進んだ");
+
+  // ← で戻れる。Esc で閉じる
+  await page.keyboard.press("ArrowLeft");
+  await expect(slides.locator(".slide-sentence")).toHaveText(sentences[0].text);
+  await page.keyboard.press("Escape");
+  await expect(slides).toHaveCount(0);
+
+  // 自動再生していた時間（2文 + 間）が、このデッキのリスニングとして記録される
+  await page.goto("/stats");
+  await expect.poll(() => studySeconds(me.id, "listening")).toBeGreaterThanOrEqual(1);
+  const { rows: t } = await db().query("SELECT DISTINCT deck_id FROM study_time WHERE user_id = $1", [me.id]);
+  expect(t).toEqual([{ deck_id: deck }]);
+});
+
+test("UI-19 物語の場面の絵: 場面ごとに指示文が出る。画像を取り込むと、場面の欄とスライドに絵が出る。消せる", async ({ page, context }, testInfo) => {
+  const sentences = Array.from({ length: 6 }, (_, i) => ({ text: `The fox walked to place number ${i + 1}.`, translation: `${i + 1}` }));
+  const { rows } = await db().query(
+    "INSERT INTO decks (user_id, name, kind, sentences) VALUES ($1, '物語: The Fox', 'story', $2) RETURNING id",
+    [me.id, JSON.stringify(sentences)]
+  );
+  const deck = rows[0].id;
+  await loginAs(context, me);
+  await page.goto(`/decks/${deck}`);
+
+  // 6文 → 3文ずつの2場面
+  const scenes = page.locator(".scene");
+  await expect(scenes).toHaveCount(2);
+  await expect(page.locator(".scenes summary")).toHaveText("場面の絵（0 / 2 枚）");
+  await expect(scenes.first().locator("textarea")).toHaveValue(/^Warm picture-book illustration.*place number 1\..*place number 3\.$/);
+  await expect(scenes.first()).toContainText("文 1〜3");
+
+  // 「自動で作る」の上に、隠したファイル選択が重なっていない（押すとファイル選択が開く不具合）
+  const gen = scenes.first().getByRole("button", { name: "自動で作る" });
+  await gen.scrollIntoViewIfNeeded();
+  const hit = await gen.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    const points = [[0.5, 0.5], [0.1, 0.5], [0.9, 0.5]].map(([x, y]) => document.elementFromPoint(r.left + r.width * x, r.top + r.height * y));
+    return points.map((p) => (p === el || el.contains(p) ? "button" : `${p?.tagName}.${p?.className}`));
+  });
+  expect(hit).toEqual(["button", "button", "button"]);
+  // ファイル選択は透明にして重ねるのではなく、完全に隠す（ブラウザによっては、はみ出した部分が隣のボタンを覆う）
+  await expect(scenes.first().locator('input[type="file"]')).toBeHidden();
+
+  const png = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+    "base64"
+  );
+  await scenes.first().locator('input[type="file"]').setInputFiles({ name: "scene.png", mimeType: "image/png", buffer: png });
+  await expect(scenes.first().locator(".scene-image img")).toBeVisible();
+  await expect(page.locator(".scenes summary")).toHaveText("場面の絵（1 / 2 枚）");
+  await shot(page, testInfo, "1. 1つ目の場面に画像を取り込んだ");
+
+  // スライド: 題名と場面1の文には絵が出る。場面2の文には出ない
+  await page.getByRole("button", { name: "スライドで見る" }).click();
+  const slides = page.getByRole("dialog", { name: "物語のスライド" });
+  await expect(slides.locator(".slide-image")).toBeVisible();
+  await page.keyboard.press("ArrowRight");
+  await expect(slides.locator(".slide-image")).toBeVisible();
+  await shot(page, testInfo, "2. スライドに場面の絵が出る");
+  for (let i = 0; i < 3; i++) await page.keyboard.press("ArrowRight");
+  await expect(slides.locator(".slide-sentence")).toHaveText(sentences[3].text);
+  await expect(slides.locator(".slide-image")).toHaveCount(0);
+  await page.keyboard.press("Escape");
+
+  await scenes.first().getByRole("button", { name: "絵を消す" }).click();
+  await expect(scenes.first().locator(".scene-noimage")).toBeVisible();
+  await expect(page.locator(".scenes summary")).toHaveText("場面の絵（0 / 2 枚）");
+});

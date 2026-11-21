@@ -24,6 +24,7 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 | [known_words](#known_words) | 「知ってる」を押した語 | 002 |
 | [videos](#videos) | おすすめに出す YouTube の動画の情報 | 015（016 で列を変更） |
 | [study_time](#study_time) | 勉強時間（単語・リスニング） | 017 |
+| [story_scenes](#story_scenes) | 物語の場面と、場面の絵 | 018 |
 | [schema_migrations](#schema_migrations) | 当てたマイグレーション | `scripts/migrate.mjs` |
 
 ---
@@ -256,6 +257,28 @@ YouTube の oEmbed（API キー不要）で取る。ユーザーのものでは�
 - 主キー: `id`
 - 外部キー: `user_id` → `users.id`（ユーザーを消すと消える）、`deck_id` → `decks.id`（デッキを消すと NULL。時間の記録は残す）
 - インデックス: `study_time_user_recorded_at_idx`（`user_id, recorded_at`。日ごとの集計）、`study_time_deck_id_idx`（`deck_id`）
+
+## story_scenes
+
+物語の場面（[features.md](features.md#6-覚えた語で物語を作るlibstoryjslibstorypromptjs)）。物語のデッキの文を4文くらいずつの場面に分け、
+場面ごとに絵を付ける。物語のデッキを初めて開いたときに作る。絵は画像そのものを入れる（取り込んだ画像か、無料の画像生成サービスで作った画像）。
+
+| 列 | 型 | NULL | 初期値 | 説明 |
+| --- | --- | --- | --- | --- |
+| id | integer | | 連番 | 主キー |
+| deck_id | integer | | | 物語のデッキ |
+| position | integer | | | 場面の順番（0から） |
+| first_sentence | integer | | | 場面の最初の文（`decks.sentences` の番号、0から） |
+| last_sentence | integer | | | 場面の最後の文 |
+| prompt | text | | | 絵の指示文（英語）。初めは「絵のスタイル＋場面の英文」。利用者が直せる |
+| image | bytea | ○ | | 絵（5MB まで）。NULL = まだない |
+| image_type | text | ○ | | 画像の種類（`image/png` など）。中身の先頭のバイトで見分けたもの |
+| image_source | text | ○ | | `upload`（取り込んだ）か `generated`（自動で作った） |
+| image_updated_at | timestamptz | ○ | | 絵を変えた日時。画像の URL に付けて、古い絵がキャッシュで出ないようにする |
+
+- 主キー: `id`
+- 外部キー: `deck_id` → `decks.id`（デッキを消すと消える）
+- 一意: `(deck_id, position)`
 
 ## schema_migrations
 
