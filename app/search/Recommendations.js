@@ -59,7 +59,7 @@ function VideoResult({ video }) {
             YouTube で見る ↗
           </a>
           <Link href={newDeckHref} className="button-link primary">
-            この動画でデッキを作る
+            この動画で単語帳を作る
           </Link>
         </div>
       </div>
@@ -91,9 +91,9 @@ export function Recommendations({ videos }) {
   if (videos.length === 0) {
     return (
       <div className="notice">
-        <p>まだ探せる動画がありません。字幕を入れたデッキが増えると、ここに出てきます。</p>
+        <p>まだ探せる動画がありません。字幕を入れた単語帳が増えると、ここに出てきます。</p>
         <p className="note small">
-          それまでは、YouTube で好きな動画を見つけて、その URL を<Link href="/decks/new">新しいデッキ</Link>に貼ってください。
+          それまでは、YouTube で好きな動画を見つけて、その URL を<Link href="/decks/new">新しい単語帳</Link>に貼ってください。
         </p>
       </div>
     );
@@ -110,7 +110,7 @@ export function Recommendations({ videos }) {
           <Select label="レベル" options={FITS} value={fit} onChange={setFit} />
           <Select label="長さ" options={LENGTHS} value={length} onChange={setLength} />
         </div>
-        <p className="note small">「ちょうどいい」は、全部わかる文が5〜8割の動画です。自分のデッキにある動画は出しません。</p>
+        <p className="note small">「ちょうどいい」は、全部わかる文が5〜8割の動画です。自分の単語帳にある動画は出しません。</p>
         <p className="search-count small">
           {videos.length}本のうち <b>{shown.length}本</b>を表示
         </p>

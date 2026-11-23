@@ -15,11 +15,11 @@ export default async function SearchPage() {
   return (
     <main className="search-page">
       <p className="back-link">
-        <Link href="/">← デッキ一覧</Link>
+        <Link href="/">← 単語帳の一覧</Link>
       </p>
       <h1>動画を探す</h1>
       <p className="note">
-        ほかの人が字幕を入れてデッキにした動画を、あなたのレベルと覚えた語で解析しました。
+        ほかの人が字幕を入れて単語帳にした動画を、あなたのレベルと覚えた語で解析しました。
         キーワード・レベル・長さで絞り込めます。
       </p>
       <Recommendations videos={recs.videos} />

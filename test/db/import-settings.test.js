@@ -28,7 +28,7 @@ describe("字幕の取り込み", () => {
     expect((await pool.query("SELECT video_id, transcript FROM decks")).rows[0]).toEqual({ video_id: "dQw4w9WgXcQ", transcript: TRANSCRIPT });
   });
 
-  test("IM-02 他人のデッキ・空の字幕・おかしな URL は拒否", async () => {
+  test("IM-02 他人の単語帳・空の字幕・おかしな URL は拒否", async () => {
     const theirs = await createDeck(other.id);
     expect((await analyzeTranscript({ deckId: theirs, text: TRANSCRIPT })).error).toMatch(/見つかりません/);
     const mine = await createDeck(me.id);
@@ -79,7 +79,7 @@ describe("字幕の取り込み", () => {
     ]);
   });
 
-  test("IM-05 registerCards: 文の中にない語・4語以上・他人のデッキは拒否", async () => {
+  test("IM-05 registerCards: 文の中にない語・4語以上・他人の単語帳は拒否", async () => {
     const deck = await createDeck(me.id);
     const item = (targets) => ({ sentence: "I was skeptical.", back: "", start: null, targets });
     const t = { form: "skeptical", lemma: "skeptical" };

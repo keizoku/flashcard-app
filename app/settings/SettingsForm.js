@@ -66,7 +66,7 @@ export default function SettingsForm({ levelKey, vocabSize, nextHref = null }) {
       {state.saved && !pending && nextHref && (
         <p className="next-step">
           <Link href={nextHref} className="button-link study-link">
-            次へ：動画を選んで、デッキを作る →
+            次へ：動画を選んで、単語帳を作る →
           </Link>
         </p>
       )}

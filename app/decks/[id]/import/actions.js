@@ -23,7 +23,7 @@ async function ownedDeck(value) {
 
 export async function analyzeTranscript({ deckId: deckIdArg, text, url }) {
   const { user, deckId } = await ownedDeck(deckIdArg);
-  if (!deckId) return { error: "このデッキは見つかりません" };
+  if (!deckId) return { error: "この単語帳は見つかりません" };
 
   const transcript = String(text ?? "").trim();
   if (!transcript) return { error: "字幕のテキストを貼り付けてください" };
@@ -41,7 +41,7 @@ export async function analyzeTranscript({ deckId: deckIdArg, text, url }) {
     "UPDATE decks SET video_id = $2, transcript = $3 WHERE id = $1",
     [deckId, videoId, transcript]
   );
-  if (rowCount === 0) return { error: "このデッキは見つかりません" };
+  if (rowCount === 0) return { error: "この単語帳は見つかりません" };
 
   return analyzeSaved(user.id, deckId, transcript, videoId);
 }
@@ -72,7 +72,7 @@ async function analyzeSaved(userId, deckId, transcript, videoId, extra = {}) {
 // チャット AI で整えた文（"[0:06] It's simply ..." の行）を取り込む
 export async function importSentences({ deckId: deckIdArg, text }) {
   const { user, deckId } = await ownedDeck(deckIdArg);
-  if (!deckId) return { error: "このデッキは見つかりません" };
+  if (!deckId) return { error: "この単語帳は見つかりません" };
   if (String(text ?? "").length > MAX_TRANSCRIPT_LENGTH) return { error: "貼り付けたテキストが長すぎます" };
 
   const sentences = parseAiSentences(text);
@@ -82,7 +82,7 @@ export async function importSentences({ deckId: deckIdArg, text }) {
 
   const { rows } = await pool.query("SELECT video_id, transcript FROM decks WHERE id = $1", [deckId]);
   const deck = rows[0];
-  if (!deck) return { error: "このデッキは見つかりません" };
+  if (!deck) return { error: "この単語帳は見つかりません" };
 
   // 元の字幕がなければ、整えた文をそのまま字幕として保存する
   let transcript = deck.transcript;
@@ -110,7 +110,7 @@ export async function markKnown(word) {
 // 選んだ文をカードとして登録する。1つの文に覚えたい語が複数あれば（i+2、i+3）、1枚のカードにまとめる
 export async function registerCards({ deckId: deckIdArg, items }) {
   const { deckId } = await ownedDeck(deckIdArg);
-  if (!deckId) return { error: "このデッキは見つかりません" };
+  if (!deckId) return { error: "この単語帳は見つかりません" };
   if (!Array.isArray(items) || items.length === 0) return { error: "登録する文を選んでください" };
   if (items.length > MAX_ITEMS) return { error: `一度に登録できるのは ${MAX_ITEMS} 枚までです` };
 
@@ -153,7 +153,7 @@ export async function registerCards({ deckId: deckIdArg, items }) {
     const deck = await client.query("SELECT video_id FROM decks WHERE id = $1 FOR SHARE", [deckId]);
     if (deck.rowCount === 0) {
       await client.query("ROLLBACK");
-      return { error: "このデッキは見つかりません" };
+      return { error: "この単語帳は見つかりません" };
     }
     const vid = deck.rows[0].video_id;
     for (const c of cards) {

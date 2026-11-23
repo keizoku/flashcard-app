@@ -21,7 +21,7 @@ export default async function RootLayout({ children }) {
               {user ? (
                 <>
                   <Link href="/search">動画を探す</Link>
-                  <Link href="/shared">みんなのデッキ</Link>
+                  <Link href="/shared">みんなの単語帳</Link>
                   <Link href="/stats">統計</Link>
                   <Link href="/settings">レベル設定</Link>
                   {/* メールアドレスは出さない（画面を人に見られても大丈夫なように）。表示名がなければ「アカウント」 */}

@@ -56,8 +56,8 @@ describe("自動の記録", () => {
     ]);
   });
 
-  test("TM-06 他人のデッキには記録しない。デッキを消しても、時間の記録は残る（デッキは空になる）", async () => {
-    expect((await recordStudyTime(me.id, { kind: "vocab", seconds: 30, deckId: theirDeck })).error).toBe("デッキが見つかりません");
+  test("TM-06 他人の単語帳には記録しない。単語帳を消しても、時間の記録は残る（単語帳は空になる）", async () => {
+    expect((await recordStudyTime(me.id, { kind: "vocab", seconds: 30, deckId: theirDeck })).error).toBe("単語帳が見つかりません");
     expect(await rowsOf(me.id)).toEqual([]);
     expect(await rowsOf(other.id)).toEqual([]);
 
@@ -126,11 +126,11 @@ describe("手で足す", () => {
 });
 
 describe("集計", () => {
-  test("TM-10 日本時間の日ごと（直近14日）・今日・直近7日・デッキ別に、種類ごとの秒数を出す。他人の記録は数えない", async () => {
+  test("TM-10 日本時間の日ごと（直近14日）・今日・直近7日・単語帳別に、種類ごとの秒数を出す。他人の記録は数えない", async () => {
     const now = new Date("2026-11-20T03:00:00Z"); // 日本時間 11/20 12:00
     await insertAt(me.id, "vocab", 600, "2026-11-20T01:00:00Z", myDeck); // 11/20
     await insertAt(me.id, "listening", 900, "2026-11-19T15:30:00Z", myDeck); // 日本時間 11/20 0:30
-    await insertAt(me.id, "listening", 1200, "2026-11-19T14:30:00Z"); // 日本時間 11/19 23:30（手入力など、デッキなし）
+    await insertAt(me.id, "listening", 1200, "2026-11-19T14:30:00Z"); // 日本時間 11/19 23:30（手入力など、単語帳なし）
     await insertAt(me.id, "vocab", 300, "2026-11-14T03:00:00Z", myDeck); // 11/14（直近7日に入る）
     await insertAt(me.id, "vocab", 120, "2026-11-13T03:00:00Z", myDeck); // 11/13（14日には入るが7日には入らない）
     await insertAt(me.id, "vocab", 999, "2026-11-01T03:00:00Z", myDeck); // 14日より前

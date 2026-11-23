@@ -19,8 +19,8 @@ beforeEach(async () => {
   await loginAs(me);
 });
 
-describe("デッキ", () => {
-  test("DK-01 addDeck: 自分のデッキを作り、字幕があれば取り込み画面へ", async () => {
+describe("単語帳", () => {
+  test("DK-01 addDeck: 自分の単語帳を作り、字幕があれば取り込み画面へ", async () => {
     const { redirectTo } = await runAction(
       addDeck({}, formData({ name: "", url: "https://youtu.be/dQw4w9WgXcQ", transcript: "0:00 hello", tags: "英語, 会話" }))
     );
@@ -31,17 +31,17 @@ describe("デッキ", () => {
   });
 
   test("DK-02 addDeck: 入力のチェック", async () => {
-    expect((await addDeck({}, formData({ name: "", url: "", transcript: "" }))).error).toMatch(/デッキ名/);
+    expect((await addDeck({}, formData({ name: "", url: "", transcript: "" }))).error).toMatch(/単語帳の名前/);
     expect((await addDeck({}, formData({ name: "x", url: "https://example.com", transcript: "" }))).error).toMatch(/URL/);
     expect((await addDeck({}, formData({ name: "x".repeat(101), url: "", transcript: "" }))).error).toMatch(/100文字/);
   });
 
-  test("DK-03 updateDeck / deleteDeck / deleteDecks は他人のデッキを変えない", async () => {
+  test("DK-03 updateDeck / deleteDeck / deleteDecks は他人の単語帳を変えない", async () => {
     const mine = await createDeck(me.id, { name: "mine" });
     const theirs = await createDeck(other.id, { name: "theirs" });
 
     expect(await updateDeck(theirs, {}, formData({ name: "hacked", url: "", transcript: "", tags: "" }))).toMatchObject({
-      error: "デッキが見つかりません",
+      error: "単語帳が見つかりません",
     });
     await runAction(deleteDeck(theirs));
     expect(await deleteDecks([mine, theirs])).toMatchObject({ deleted: 1 });
@@ -50,7 +50,7 @@ describe("デッキ", () => {
     expect(names).toEqual(["theirs"]);
   });
 
-  test("DK-04 updateDeck は名前・タグを変えてデッキ画面へ", async () => {
+  test("DK-04 updateDeck は名前・タグを変えて単語帳画面へ", async () => {
     const mine = await createDeck(me.id, { name: "old" });
     const { redirectTo } = await runAction(updateDeck(mine, {}, formData({ name: "new", url: "", transcript: "", tags: "a" })));
     expect(redirectTo).toBe(`/decks/${mine}`);
@@ -58,7 +58,7 @@ describe("デッキ", () => {
     expect(await getDeckTags(mine)).toEqual(["a"]);
   });
 
-  test("DK-09 addDeck: 字幕がなければデッキの画面へ（はじめの4ステップを閉じたあと。途中なら字幕を貼る画面へ: OB-08）", async () => {
+  test("DK-09 addDeck: 字幕がなければ単語帳の画面へ（はじめの4ステップを閉じたあと。途中なら字幕を貼る画面へ: OB-08）", async () => {
     await pool.query("UPDATE users SET onboarding_dismissed_at = now()");
     const { redirectTo } = await runAction(addDeck({}, formData({ name: "no transcript", url: "", transcript: "" })));
     const deck = (await pool.query("SELECT id FROM decks")).rows[0];
@@ -71,7 +71,7 @@ describe("デッキ", () => {
     expect((await pool.query("SELECT 1 FROM decks")).rowCount).toBe(0);
   });
 
-  test("DK-11 deleteDeck: 自分のデッキを消して、トップへ", async () => {
+  test("DK-11 deleteDeck: 自分の単語帳を消して、トップへ", async () => {
     const mine = await createDeck(me.id);
     await createCard(mine);
     const { redirectTo } = await runAction(deleteDeck(mine));
@@ -89,11 +89,11 @@ describe("デッキ", () => {
 });
 
 describe("カード", () => {
-  test("DK-05 addCard: 自分のデッキにだけ追加できる", async () => {
+  test("DK-05 addCard: 自分の単語帳にだけ追加できる", async () => {
     const mine = await createDeck(me.id);
     const theirs = await createDeck(other.id);
     expect(await addCard(mine, {}, formData({ front: "f", back: "b" }))).toMatchObject({ error: null });
-    expect(await addCard(theirs, {}, formData({ front: "f", back: "b" }))).toMatchObject({ error: "このデッキは見つかりません" });
+    expect(await addCard(theirs, {}, formData({ front: "f", back: "b" }))).toMatchObject({ error: "この単語帳は見つかりません" });
     expect(await addCard(mine, {}, formData({ front: "", back: "b" }))).toMatchObject({ error: expect.stringMatching(/両方/) });
     expect((await pool.query("SELECT deck_id FROM cards")).rows).toEqual([{ deck_id: mine }]);
   });
@@ -135,21 +135,21 @@ describe("カード", () => {
     expect(await getCard(theirs)).not.toBeNull();
   });
 
-  test("DK-14 deleteCard: 自分のカードを消して、デッキの ID を返す", async () => {
+  test("DK-14 deleteCard: 自分のカードを消して、単語帳の ID を返す", async () => {
     const deck = await createDeck(me.id);
     const card = await createCard(deck);
     expect(await deleteCard(card)).toEqual({ error: null, deckId: deck });
     expect(await getCard(card)).toBeNull();
   });
 
-  test("DK-08 deleteCards は指定したデッキのカードだけ消す", async () => {
+  test("DK-08 deleteCards は指定した単語帳のカードだけ消す", async () => {
     const a = await createDeck(me.id);
     const b = await createDeck(me.id);
     const ca = await createCard(a);
     const cb = await createCard(b);
     expect(await deleteCards(a, [ca, cb])).toMatchObject({ deleted: 1 });
     expect(await getCard(cb)).not.toBeNull();
-    expect(await deleteCards(await createDeck(other.id), [cb])).toEqual({ error: "デッキが見つかりません" });
+    expect(await deleteCards(await createDeck(other.id), [cb])).toEqual({ error: "単語帳が見つかりません" });
   });
 });
 
@@ -196,11 +196,11 @@ describe("カードの解説（チャット AI）", () => {
     ]);
   });
 
-  test("EX-09 他人のデッキには取り込めない", async () => {
+  test("EX-09 他人の単語帳には取り込めない", async () => {
     const theirs = await createDeck(other.id);
     const card = await createCard(theirs);
-    expect(await importCardExplanations(theirs, `### ${card}\n和訳: x`)).toEqual({ error: "デッキが見つかりません" });
-    expect(await getCardPrompt(theirs)).toEqual({ error: "デッキが見つかりません" });
+    expect(await importCardExplanations(theirs, `### ${card}\n和訳: x`)).toEqual({ error: "単語帳が見つかりません" });
+    expect(await getCardPrompt(theirs)).toEqual({ error: "単語帳が見つかりません" });
   });
 
   test("EX-10 解説の足りないカードが21枚以上でも、1回のプロンプトは20枚まで", async () => {

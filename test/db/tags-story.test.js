@@ -24,7 +24,7 @@ describe("タグ", () => {
     expect((await pool.query("SELECT name FROM tags ORDER BY name")).rows.map((r) => r.name)).toEqual(["b", "c"]);
   });
 
-  test("TG-06 getAllTags は自分のデッキに付いたタグだけ（名前は共有）", async () => {
+  test("TG-06 getAllTags は自分の単語帳に付いたタグだけ（名前は共有）", async () => {
     await setDeckTags(await createDeck(me.id), ["mine", "shared"]);
     await setDeckTags(await createDeck(other.id), ["theirs", "shared"]);
     expect(await getAllTags(me.id)).toEqual(["mine", "shared"]);
@@ -78,7 +78,7 @@ describe("物語", () => {
     "[3] The end.",
   ].join("\n");
 
-  test("SY-05 createStoryDeck: 物語のデッキを作り、語を含む文をカードにする", async () => {
+  test("SY-05 createStoryDeck: 物語の単語帳を作り、語を含む文をカードにする", async () => {
     const r = await createStoryDeck(me.id, { answer: ANSWER, words: ["skeptical", "figure sth out"] });
     expect(r).toMatchObject({ cardCount: 2 });
     const deck = (await pool.query("SELECT * FROM decks WHERE id = $1", [r.deckId])).rows[0];
@@ -91,7 +91,7 @@ describe("物語", () => {
     expect(targets.get(cards[1].id)[0]).toMatchObject({ word: "figure sth out", form: "figured it out", translation_form: "理解した" });
   });
 
-  test("SY-06 createStory: 答えの形がちがえばエラー、正しければ新しいデッキへ", async () => {
+  test("SY-06 createStory: 答えの形がちがえばエラー、正しければ新しい単語帳へ", async () => {
     expect((await createStory({ answer: "hello", words: ["skeptical"] })).error).toMatch(/\[1\]/);
     expect((await createStory({ answer: ANSWER, words: [] })).error).toMatch(/プロンプト/);
     const { redirectTo } = await runAction(createStory({ answer: ANSWER, words: ["skeptical"] }));

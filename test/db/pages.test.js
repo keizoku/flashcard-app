@@ -56,8 +56,8 @@ const isNotFound = (promise) =>
     }
   );
 
-describe("他人のデッキ・カードの画面", () => {
-  test("PG-01 デッキ・編集・取り込み・学習・カード編集の画面は、他人のものなら 404、自分のものなら開ける", async () => {
+describe("他人の単語帳・カードの画面", () => {
+  test("PG-01 単語帳・編集・取り込み・学習・カード編集の画面は、他人のものなら 404、自分のものなら開ける", async () => {
     const mine = await createDeck(me.id, { name: "mine" });
     const theirs = await createDeck(other.id, { name: "theirs" });
     const myCard = await createCard(mine);
@@ -73,8 +73,8 @@ describe("他人のデッキ・カードの画面", () => {
   });
 });
 
-describe("トップのデッキ一覧", () => {
-  test("PG-02 自分のデッキだけを、今日出す枚数と一緒に出す", async () => {
+describe("トップの単語帳の一覧", () => {
+  test("PG-02 自分の単語帳だけを、今日出す枚数と一緒に出す", async () => {
     const mine = await createDeck(me.id, { name: "mine" });
     await createDeck(other.id, { name: "theirs" });
     await createCard(mine); // 未学習 → 今日出す
@@ -87,7 +87,7 @@ describe("トップのデッキ一覧", () => {
     expect(decks[0]).toMatchObject({ id: mine, name: "mine", card_count: 2, due_count: 1 });
   });
 
-  test("PG-04 デッキの種類（動画 / 覚えた単語で作った物語）も渡す。一覧で物語を区別するため", async () => {
+  test("PG-04 単語帳の種類（動画 / 覚えた単語で作った物語）も渡す。一覧で物語を区別するため", async () => {
     const video = await createDeck(me.id, { name: "video" });
     const story = await createDeck(me.id, { name: "story", kind: "story" });
     const page = await Home({ searchParams: Promise.resolve({}) });
@@ -100,7 +100,7 @@ describe("トップのデッキ一覧", () => {
 });
 
 describe("統計の画面", () => {
-  test("PG-03 自分のデッキ・カード・学習の記録だけを数える", async () => {
+  test("PG-03 自分の単語帳・カード・学習の記録だけを数える", async () => {
     const mine = await createDeck(me.id, { name: "MY-DECK" });
     const theirs = await createDeck(other.id, { name: "THEIR-DECK" });
     const myCard = await createCard(mine, { targets: [{ word: "myword", form: "myword" }] });

@@ -55,22 +55,22 @@ export default async function Home({ searchParams }) {
       )}
       {onboarding.show && <Onboarding onboarding={onboarding} />}
       <div className="page-head">
-        <h1>デッキ</h1>
+        <h1>単語帳</h1>
         <div className="actions-row">
           <Link href="/stories/new" className="button-link">
             覚えた単語で物語を作る
           </Link>
           <Link href="/decks/new" className="button-link study-link">
-            ＋ 新しいデッキ
+            ＋ 新しい単語帳
           </Link>
         </div>
       </div>
       {decks.length === 0 ? (
         <div className="empty-state">
-          <p>まだデッキがありません。</p>
-          <p className="note small">YouTube の URL を入れるだけで、動画のタイトルのデッキが作れます。</p>
+          <p>まだ単語帳がありません。</p>
+          <p className="note small">YouTube の URL を入れるだけで、動画のタイトルの単語帳が作れます。</p>
           <Link href="/decks/new" className="button-link study-link">
-            最初のデッキを作る
+            最初の単語帳を作る
           </Link>
         </div>
       ) : (

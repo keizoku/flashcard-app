@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import { pool } from "@/lib/db";
 import { verifyPassword } from "@/lib/password";
-import { createVerifiedUser, setUserPassword } from "@/lib/userAdmin";
-import { createUser, loginAs, resetDb } from "../helpers.js";
+import { createVerifiedUser, resetUserData, setUserPassword } from "@/lib/userAdmin";
+import { createCard, createDeck, createUser, loginAs, resetDb } from "../helpers.js";
 
 // テスト用のアカウントを、メールなしで作る道具（scripts/create-user.mjs、docs/deploy.md）
 beforeEach(resetDb);
@@ -60,5 +60,45 @@ describe("テスト用のアカウントを作る", () => {
       expect(read(f)).not.toMatch(/import\s+"server-only"|from\s+"@\//);
     }
     expect(read("scripts/create-user.mjs")).toMatch(/lib\/userAdmin\.js/);
+    expect(read("scripts/reset-user.mjs")).toMatch(/lib\/userAdmin\.js/);
+  });
+
+  test("UA-06 データを最初の状態に戻す: その人の単語帳・カード・記録・設定・勉強時間を消し、はじめの4ステップをまた出す。アカウントとパスワードは残す。ほかの人には触れない", async () => {
+    const t = await createUser({ email: "tester1@example.com" });
+    const other = await createUser({ email: "other@example.com" });
+    for (const u of [t, other]) {
+      const deck = await createDeck(u.id);
+      const card = await createCard(deck);
+      await pool.query("INSERT INTO review_logs (card_id, deck_id, remembered) VALUES ($1, $2, true)", [card, deck]);
+      await pool.query("INSERT INTO settings (user_id, level_key, vocab_size) VALUES ($1, 'eiken-2', 5000)", [u.id]);
+      await pool.query("INSERT INTO known_words (user_id, word) VALUES ($1, 'apple')", [u.id]);
+      await pool.query("INSERT INTO study_time (user_id, kind, seconds) VALUES ($1, 'vocab', 60)", [u.id]);
+      await pool.query("UPDATE users SET onboarding_dismissed_at = now() WHERE id = $1", [u.id]);
+    }
+    await loginAs(t);
+    const before = await userRow("tester1@example.com");
+
+    const counts = async (id) =>
+      (
+        await pool.query(
+          `SELECT (SELECT count(*) FROM decks WHERE user_id = $1)::int AS decks,
+                  (SELECT count(*) FROM settings WHERE user_id = $1)::int AS settings,
+                  (SELECT count(*) FROM known_words WHERE user_id = $1)::int AS known,
+                  (SELECT count(*) FROM study_time WHERE user_id = $1)::int AS time,
+                  (SELECT onboarding_dismissed_at IS NOT NULL FROM users WHERE id = $1) AS dismissed`,
+          [id]
+        )
+      ).rows[0];
+    expect(await counts(t.id)).toEqual({ decks: 1, settings: 1, known: 1, time: 1, dismissed: true });
+
+    const r = await resetUserData(pool, "Tester1@example.com");
+    expect(r).toMatchObject({ reset: true, deleted: { decks: 1, settings: 1, knownWords: 1, studyTime: 1 } });
+    expect(await counts(t.id)).toEqual({ decks: 0, settings: 0, known: 0, time: 0, dismissed: false });
+    expect((await pool.query("SELECT count(*)::int AS n FROM cards")).rows[0].n).toBe(1);
+    expect((await pool.query("SELECT count(*)::int AS n FROM review_logs")).rows[0].n).toBe(1);
+    expect((await userRow("tester1@example.com")).password_hash).toBe(before.password_hash);
+    expect(await counts(other.id)).toEqual({ decks: 1, settings: 1, known: 1, time: 1, dismissed: true });
+
+    expect((await resetUserData(pool, "nobody@example.com")).error).toMatch(/見つかりません/);
   });
 });

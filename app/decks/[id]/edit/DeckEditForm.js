@@ -23,7 +23,7 @@ export default function DeckEditForm({ deck, initialUrl, cardCount, tags, allTag
     <>
       <form action={formAction} className="add-form">
         <label>
-          デッキ名
+          単語帳の名前
           <input ref={nameRef} name="name" defaultValue={deck.name} maxLength={100} required />
           <TitleStatus status={status} />
         </label>
@@ -48,7 +48,7 @@ export default function DeckEditForm({ deck, initialUrl, cardCount, tags, allTag
           onClick={() => onUrlChange(urlRef.current?.value ?? "", { force: true })}
           disabled={pending || deleting}
         >
-          デッキ名を動画のタイトルにする
+          単語帳の名前を動画のタイトルにする
         </button>
         <label>
           字幕のテキスト（任意）
@@ -63,11 +63,11 @@ export default function DeckEditForm({ deck, initialUrl, cardCount, tags, allTag
       </form>
 
       <section className="danger-zone">
-        <h2>デッキの削除</h2>
-        <p className="note small">デッキと、中のカード（{cardCount} 枚）がすべて削除されます。元に戻せません。</p>
+        <h2>単語帳の削除</h2>
+        <p className="note small">単語帳と、中のカード（{cardCount} 枚）がすべて削除されます。元に戻せません。</p>
         <ConfirmButton
-          label="このデッキを削除"
-          confirmMessage={`デッキ「${deck.name}」と、中のカード ${cardCount} 枚を削除します。元に戻せません。`}
+          label="この単語帳を削除"
+          confirmMessage={`単語帳「${deck.name}」と、中のカード ${cardCount} 枚を削除します。元に戻せません。`}
           confirmLabel="削除する"
           pendingLabel="削除中…"
           pending={deleting}

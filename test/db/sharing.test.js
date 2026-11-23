@@ -16,7 +16,7 @@ import { getDeckTags, setDeckTags } from "@/lib/tags";
 import { getTargetsByCard } from "@/lib/targets";
 import { createCard, createDeck, createUser, formData, loginAs, resetDb, runAction } from "../helpers.js";
 
-// デッキの共有（公開・みんなのデッキ・取り込み）
+// 単語帳の共有（公開・みんなの単語帳・取り込み）
 
 let me;
 let other;
@@ -27,7 +27,7 @@ beforeEach(async () => {
   await loginAs(me);
 });
 
-// other が作って公開したデッキ（カード2枚・タグ・字幕・解説つき）
+// other が作って公開した単語帳（カード2枚・タグ・字幕・解説つき）
 async function publishedByOther({ name = "Other's deck" } = {}) {
   await setDisplayName(other.id, "たろう");
   const deck = await createDeck(other.id, { name, transcript: "0:00 I was skeptical.", videoId: "dQw4w9WgXcQ" });
@@ -61,7 +61,7 @@ describe("表示名", () => {
     expect(normalizeDisplayName("a\u0007b").error).toMatch(/使えない文字/);
   });
 
-  test("SH-02 表示名を保存できる（自分の分だけ）。公開中のデッキがあると、空にはできない", async () => {
+  test("SH-02 表示名を保存できる（自分の分だけ）。公開中の単語帳があると、空にはできない", async () => {
     const r = await updateDisplayName(null, formData({ displayName: " はなこ " }));
     expect(r).toEqual({ error: null, saved: true, name: "はなこ" });
     const names = await pool.query("SELECT email, display_name FROM users ORDER BY id");
@@ -73,7 +73,7 @@ describe("表示名", () => {
     const deck = await createDeck(me.id);
     await createCard(deck);
     await setDeckPublished(me.id, deck, true);
-    expect((await updateDisplayName(null, formData({ displayName: "" }))).error).toMatch(/公開中のデッキがある/);
+    expect((await updateDisplayName(null, formData({ displayName: "" }))).error).toMatch(/公開中の単語帳がある/);
     await setDeckPublished(me.id, deck, false);
     expect(await updateDisplayName(null, formData({ displayName: "" }))).toMatchObject({ saved: true, name: null });
   });
@@ -84,7 +84,7 @@ describe("公開する・やめる", () => {
     const deck = await createDeck(me.id);
     expect((await runAction(setPublished(deck, true))).result.error).toMatch(/表示名を決めて/);
     await setDisplayName(me.id, "はなこ");
-    expect((await runAction(setPublished(deck, true))).result.error).toMatch(/カードのないデッキ/);
+    expect((await runAction(setPublished(deck, true))).result.error).toMatch(/カードのない単語帳/);
     await createCard(deck);
     expect((await runAction(setPublished(deck, true))).result).toEqual({ ok: true, published: true });
     const first = (await pool.query("SELECT published_at FROM decks WHERE id = $1", [deck])).rows[0].published_at;
@@ -95,13 +95,13 @@ describe("公開する・やめる", () => {
     expect((await pool.query("SELECT published_at FROM decks WHERE id = $1", [deck])).rows[0].published_at).toBeNull();
   });
 
-  test("SH-04 他人のデッキは公開も、公開をやめることもできない", async () => {
+  test("SH-04 他人の単語帳は公開も、公開をやめることもできない", async () => {
     await setDisplayName(me.id, "はなこ");
     const theirs = await publishedByOther();
     const hidden = await createDeck(other.id);
     await createCard(hidden);
-    expect((await runAction(setPublished(theirs, false))).result.error).toBe("デッキが見つかりません");
-    expect((await runAction(setPublished(hidden, true))).result.error).toBe("デッキが見つかりません");
+    expect((await runAction(setPublished(theirs, false))).result.error).toBe("単語帳が見つかりません");
+    expect((await runAction(setPublished(hidden, true))).result.error).toBe("単語帳が見つかりません");
     const { rows } = await pool.query("SELECT id, published_at IS NOT NULL AS published FROM decks ORDER BY id");
     expect(rows).toEqual([
       { id: theirs, published: true },
@@ -110,8 +110,8 @@ describe("公開する・やめる", () => {
   });
 });
 
-describe("みんなのデッキ", () => {
-  test("SH-05 一覧には公開中のデッキだけが、表示名・枚数・タグ付きで出る。メールアドレスは出さない", async () => {
+describe("みんなの単語帳", () => {
+  test("SH-05 一覧には公開中の単語帳だけが、表示名・枚数・タグ付きで出る。メールアドレスは出さない", async () => {
     const theirs = await publishedByOther();
     await createDeck(other.id, { name: "非公開" });
     await setDisplayName(me.id, "はなこ");
@@ -127,7 +127,7 @@ describe("みんなのデッキ", () => {
     expect(JSON.stringify(list)).not.toContain("@example.com");
   });
 
-  test("SH-06 公開していないデッキの中身は見られない（画面は 404）。公開中なら、カードと覚えたい語が見られる", async () => {
+  test("SH-06 公開していない単語帳の中身は見られない（画面は 404）。公開中なら、カードと覚えたい語が見られる", async () => {
     const theirs = await publishedByOther();
     const hidden = await createDeck(other.id, { name: "非公開" });
     expect(await getPublicDeck(hidden, me.id)).toBeNull();
@@ -148,7 +148,7 @@ describe("みんなのデッキ", () => {
 });
 
 describe("取り込み", () => {
-  test("SH-07 取り込むと、その時点のデッキ・タグ・カード・解説・覚えたい語が自分のデッキにコピーされる。学習の状態は最初から", async () => {
+  test("SH-07 取り込むと、その時点の単語帳・タグ・カード・解説・覚えたい語が自分の単語帳にコピーされる。学習の状態は最初から", async () => {
     const theirs = await publishedByOther();
     const { redirectTo } = await runAction(importSharedDeck(theirs));
     const { rows: decks } = await pool.query("SELECT * FROM decks WHERE user_id = $1", [me.id]);
@@ -186,7 +186,7 @@ describe("取り込み", () => {
     expect((await pool.query("SELECT COUNT(*)::int AS n FROM review_logs WHERE deck_id = $1", [copy.id])).rows[0].n).toBe(0);
   });
 
-  test("SH-08 取り込んだあとに元のデッキを変えても・消しても、コピーは変わらない。元のデッキも変わらない", async () => {
+  test("SH-08 取り込んだあとに元の単語帳を変えても・消しても、コピーは変わらない。元の単語帳も変わらない", async () => {
     const theirs = await publishedByOther();
     const { deckId } = await copyPublicDeck(me.id, theirs);
     const before = (await pool.query("SELECT * FROM cards WHERE deck_id = $1 ORDER BY id", [theirs])).rows;
@@ -202,22 +202,22 @@ describe("取り込み", () => {
     expect(rows[0]).toEqual({ source_deck_id: null, n: 2 });
   });
 
-  test("SH-09 公開していない・ないデッキ・自分のデッキは取り込めない", async () => {
+  test("SH-09 公開していない・ない単語帳・自分の単語帳は取り込めない", async () => {
     const hidden = await createDeck(other.id);
     await createCard(hidden);
-    expect((await runAction(importSharedDeck(hidden))).result).toEqual({ error: "このデッキは公開されていません" });
-    expect((await runAction(importSharedDeck(999999))).result).toEqual({ error: "このデッキは公開されていません" });
-    expect((await runAction(importSharedDeck("abc"))).result).toEqual({ error: "このデッキは公開されていません" });
+    expect((await runAction(importSharedDeck(hidden))).result).toEqual({ error: "この単語帳は公開されていません" });
+    expect((await runAction(importSharedDeck(999999))).result).toEqual({ error: "この単語帳は公開されていません" });
+    expect((await runAction(importSharedDeck("abc"))).result).toEqual({ error: "この単語帳は公開されていません" });
 
     await setDisplayName(me.id, "はなこ");
     const mine = await createDeck(me.id);
     await createCard(mine);
     await setDeckPublished(me.id, mine, true);
-    expect((await runAction(importSharedDeck(mine))).result).toEqual({ error: "自分のデッキは取り込めません" });
+    expect((await runAction(importSharedDeck(mine))).result).toEqual({ error: "自分の単語帳は取り込めません" });
     expect((await pool.query("SELECT COUNT(*)::int AS n FROM decks")).rows[0].n).toBe(2);
   });
 
-  test("SH-10 取り込みずみの印は、取り込んだ人にだけ付く。もう一度取り込むと、別のデッキになる", async () => {
+  test("SH-10 取り込みずみの印は、取り込んだ人にだけ付く。もう一度取り込むと、別の単語帳になる", async () => {
     const theirs = await publishedByOther();
     const first = (await copyPublicDeck(me.id, theirs)).deckId;
     expect((await listPublicDecks(me.id))[0].imported_deck_id).toBe(first);

@@ -96,7 +96,7 @@ describe("レベルに合うか", () => {
 });
 
 describe("おすすめの候補", () => {
-  test("RC-03 ほかの人が字幕付きでデッキにした動画。学んだ人数を数え、いちばん長い字幕を使う。自分のデッキにある動画・字幕のない・物語のデッキは除く", async () => {
+  test("RC-03 ほかの人が字幕付きで単語帳にした動画。学んだ人数を数え、いちばん長い字幕を使う。自分の単語帳にある動画・字幕のない・物語の単語帳は除く", async () => {
     await createDeck(u1.id, { name: "u1 A", videoId: A, transcript: transcript(EASY.slice(0, 10)) });
     await createDeck(u2.id, { name: "u2 A", videoId: A, transcript: transcript(EASY) });
     await createDeck(u1.id, { name: "u1 A again", videoId: A, transcript: transcript(EASY.slice(0, 3)) });
@@ -110,7 +110,7 @@ describe("おすすめの候補", () => {
     expect(list.map((v) => v.videoId)).toEqual([A]);
     expect(list[0].learners).toBe(2);
     expect(list[0].transcript).toBe(transcript(EASY));
-    // デッキ名・ユーザーは返さない
+    // 単語帳の名前・ユーザーは返さない
     expect(Object.keys(list[0]).sort()).toEqual(["learners", "transcript", "videoId"]);
   });
 });
@@ -134,7 +134,7 @@ describe("動画のタイトルを取る", () => {
 });
 
 describe("おすすめの動画", () => {
-  test("RC-05 タイトルは YouTube のもの（デッキ名ではない）。見られない動画・タイトルを取れなかった動画は出さない。長さは字幕の最後の時刻", async () => {
+  test("RC-05 タイトルは YouTube のもの（単語帳の名前ではない）。見られない動画・タイトルを取れなかった動画は出さない。長さは字幕の最後の時刻", async () => {
     await createDeck(u1.id, { name: "u1 の秘密の名前", videoId: A, transcript: transcript(EASY) });
     await createDeck(u1.id, { videoId: B, transcript: transcript(EASY) });
     await createDeck(u1.id, { videoId: C, transcript: transcript(EASY) });

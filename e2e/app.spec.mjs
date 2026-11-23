@@ -49,24 +49,24 @@ test("UI-01 ログインしていないと、ログイン画面へ。ログイ�
   await shot(page, testInfo, "4. ログアウトしたので、統計を開くとログイン画面になる");
 });
 
-test("UI-02 他人のデッキの URL を開いても、中身は出ず 404 になる", async ({ page, context }, testInfo) => {
-  const othersDeck = await createDeck(other.id, { name: "他人の秘密のデッキ" });
+test("UI-02 他人の単語帳の URL を開いても、中身は出ず 404 になる", async ({ page, context }, testInfo) => {
+  const othersDeck = await createDeck(other.id, { name: "他人の秘密の単語帳" });
   await createCard(othersDeck, { front: "This is someone else's card." });
   await loginAs(context, me);
 
   const res = await page.goto(`/decks/${othersDeck}`);
   expect(res.status()).toBe(404);
-  await expect(page.getByText("他人の秘密のデッキ")).toHaveCount(0);
+  await expect(page.getByText("他人の秘密の単語帳")).toHaveCount(0);
   await expect(page.getByText("someone else's card")).toHaveCount(0);
-  await shot(page, testInfo, "1. 他人のデッキを開くと 404");
+  await shot(page, testInfo, "1. 他人の単語帳を開くと 404");
 
   const study = await page.goto(`/decks/${othersDeck}/study`);
   expect(study.status()).toBe(404);
-  await shot(page, testInfo, "2. 他人のデッキの学習画面も 404");
+  await shot(page, testInfo, "2. 他人の単語帳の学習画面も 404");
 });
 
 test("UI-03 学習画面をキーボードで進める（→ で答え、→ で覚えている、1 で覚えていない）。結果が DB に残る", async ({ page, context }, testInfo) => {
-  const deck = await createDeck(me.id, { name: "キーボードのデッキ" });
+  const deck = await createDeck(me.id, { name: "キーボードの単語帳" });
   await createCard(deck, { front: "I was skeptical at first.", back: "最初は疑っていた", word: "skeptical" });
   await loginAs(context, me);
 
@@ -102,7 +102,7 @@ test("UI-03 学習画面をキーボードで進める（→ で答え、→ で
 const TRANSCRIPT = "0:00 I think this is a very good day for us.\n0:05 I was skeptical about the whole plan at first.";
 
 test("UI-04 字幕の取り込み: 保存した字幕から i+1 の文を探し、選んでカードに登録する", async ({ page, context }, testInfo) => {
-  const deck = await createDeck(me.id, { name: "取り込みのデッキ", transcript: TRANSCRIPT });
+  const deck = await createDeck(me.id, { name: "取り込みの単語帳", transcript: TRANSCRIPT });
   await loginAs(context, me);
 
   await page.goto(`/decks/${deck}/import`);
@@ -119,7 +119,7 @@ test("UI-04 字幕の取り込み: 保存した字幕から i+1 の文を探し�
   await registerButton.click();
   await expect(page).toHaveURL(new RegExp(`/decks/${deck}$`));
   await expect(page.getByText("I was skeptical about the whole plan at first.")).toBeVisible();
-  await shot(page, testInfo, "3. 登録すると、デッキの画面にカードが並ぶ");
+  await shot(page, testInfo, "3. 登録すると、単語帳の画面にカードが並ぶ");
 
   const { rows } = await db().query(
     "SELECT c.front, t.word FROM cards c JOIN card_targets t ON t.card_id = c.id WHERE c.deck_id = $1",
@@ -129,12 +129,12 @@ test("UI-04 字幕の取り込み: 保存した字幕から i+1 の文を探し�
 });
 
 test("UI-05 統計画面: 覚え具合の数と割合が、カードの状態どおりに出る。他人のカードは数えない", async ({ page, context }, testInfo) => {
-  const deck = await createDeck(me.id, { name: "統計のデッキ" });
+  const deck = await createDeck(me.id, { name: "統計の単語帳" });
   await createCard(deck, { front: "Learned one.", word: "learned", review: { box: 3, count: 3 } });
   await createCard(deck, { front: "Learning one.", word: "learning", review: { box: 1, count: 1 } });
   await createCard(deck, { front: "Forgot one.", word: "forgot", review: { box: 0, count: 2, lapses: 1 } });
   await createCard(deck, { front: "New one.", word: "new" });
-  const othersDeck = await createDeck(other.id, { name: "他人のデッキ" });
+  const othersDeck = await createDeck(other.id, { name: "他人の単語帳" });
   await createCard(othersDeck, { front: "Others.", review: { box: 3, count: 3 } });
   await loginAs(context, me);
 
@@ -146,26 +146,26 @@ test("UI-05 統計画面: 覚え具合の数と割合が、カードの状態ど
     await expect(tile.locator(".stat-value")).toHaveText(value);
     await expect(tile.locator(".stat-sub")).toHaveText("25%");
   }
-  await expect(page.getByText("他人のデッキ")).toHaveCount(0);
-  await shot(page, testInfo, "1. 覚えた・覚え中・覚えていない・未学習が 1 枚ずつ（25%）。他人のデッキは出ない");
+  await expect(page.getByText("他人の単語帳")).toHaveCount(0);
+  await shot(page, testInfo, "1. 覚えた・覚え中・覚えていない・未学習が 1 枚ずつ（25%）。他人の単語帳は出ない");
 });
 
-test("UI-06 トップ画面: デッキごとに、今日のカードの数と動画の理解度が出る", async ({ page, context }, testInfo) => {
-  const deck = await createDeck(me.id, { name: "理解度のデッキ", transcript: TRANSCRIPT });
+test("UI-06 トップ画面: 単語帳ごとに、今日のカードの数と動画の理解度が出る", async ({ page, context }, testInfo) => {
+  const deck = await createDeck(me.id, { name: "理解度の単語帳", transcript: TRANSCRIPT });
   await createCard(deck, { front: "Due today.", word: "due" });
   await createCard(deck, { front: "Tomorrow.", word: "tomorrow", review: { box: 1, count: 1 } });
   await loginAs(context, me);
 
   await page.goto("/");
-  const item = page.locator("li").filter({ hasText: "理解度のデッキ" });
+  const item = page.locator("li").filter({ hasText: "理解度の単語帳" });
   await expect(item.getByText(/今日 1 枚/)).toBeVisible();
   await expect(item.getByText(/2 枚/)).toBeVisible();
   await expect(item.getByText("理解度 50%")).toBeVisible();
   await shot(page, testInfo, "1. 今日のカード 1 枚（全 2 枚）、理解度 50%（2文のうち1文がわかる）");
 });
 
-test("UI-07 デッキの共有: 表示名を決めて公開すると、ほかの人がみんなのデッキから取り込める", async ({ page, context, browser }, testInfo) => {
-  const deck = await createDeck(me.id, { name: "共有するデッキ" });
+test("UI-07 単語帳の共有: 表示名を決めて公開すると、ほかの人がみんなの単語帳から取り込める", async ({ page, context, browser }, testInfo) => {
+  const deck = await createDeck(me.id, { name: "共有する単語帳" });
   await createCard(deck, { front: "I was skeptical at first.", back: "最初は疑っていた", word: "skeptical" });
   await createCard(deck, { front: "We figured it out.", word: "figure out" });
   await loginAs(context, me);
@@ -177,36 +177,36 @@ test("UI-07 デッキの共有: 表示名を決めて公開すると、ほかの
   await shot(page, testInfo, "1. アカウントの画面で、表示名を決める");
 
   await page.goto(`/decks/${deck}/edit`);
-  await page.getByRole("button", { name: "このデッキを公開する" }).click();
+  await page.getByRole("button", { name: "この単語帳を公開する" }).click();
   await expect(page.getByRole("button", { name: "公開をやめる" })).toBeVisible();
   await expect(page.locator(".publish-panel")).toContainText("作った人: はなこ");
-  await shot(page, testInfo, "2. デッキの編集の画面で公開する");
+  await shot(page, testInfo, "2. 単語帳の編集の画面で公開する");
 
   // ほかのユーザーとしてログインした、別のブラウザ
   const otherContext = await browser.newContext({ locale: "ja-JP", timezoneId: "Asia/Tokyo", viewport: { width: 1100, height: 800 } });
   const otherPage = await otherContext.newPage();
   await loginAs(otherContext, other);
   await otherPage.goto("/");
-  await otherPage.locator("header").getByRole("link", { name: "みんなのデッキ" }).click();
+  await otherPage.locator("header").getByRole("link", { name: "みんなの単語帳" }).click();
   await expect(otherPage).toHaveURL(/\/shared$/);
-  const item = otherPage.locator(".shared-decks li").filter({ hasText: "共有するデッキ" });
+  const item = otherPage.locator(".shared-decks li").filter({ hasText: "共有する単語帳" });
   await expect(item).toContainText("はなこ");
   await expect(item).toContainText("2 枚");
   await expect(otherPage.getByText("me@example.com")).toHaveCount(0);
-  await shot(otherPage, testInfo, "3. ほかの人の「みんなのデッキ」に出る（表示名だけで、メールアドレスは出ない）");
+  await shot(otherPage, testInfo, "3. ほかの人の「みんなの単語帳」に出る（表示名だけで、メールアドレスは出ない）");
 
   await item.getByRole("link").click();
   await expect(otherPage.getByText("I was skeptical at first.")).toBeVisible();
   await shot(otherPage, testInfo, "4. 開くと、カードの中身が見られる");
 
-  await otherPage.getByRole("button", { name: "自分のデッキに取り込む（2 枚）" }).click();
-  await expect(otherPage.getByText("みんなのデッキから取り込みました")).toBeVisible();
-  await expect(otherPage.getByRole("heading", { name: "共有するデッキ" })).toBeVisible();
+  await otherPage.getByRole("button", { name: "自分の単語帳に取り込む（2 枚）" }).click();
+  await expect(otherPage.getByText("みんなの単語帳から取り込みました")).toBeVisible();
+  await expect(otherPage.getByRole("heading", { name: "共有する単語帳" })).toBeVisible();
   await expect(otherPage.getByText("We figured it out.")).toBeVisible();
-  await shot(otherPage, testInfo, "5. 取り込むと、自分のデッキになる");
+  await shot(otherPage, testInfo, "5. 取り込むと、自分の単語帳になる");
 
   await otherPage.goto("/shared");
-  await expect(otherPage.locator(".shared-decks li").filter({ hasText: "共有するデッキ" })).toContainText("取り込みずみ");
+  await expect(otherPage.locator(".shared-decks li").filter({ hasText: "共有する単語帳" })).toContainText("取り込みずみ");
   await shot(otherPage, testInfo, "6. 一覧に「取り込みずみ」と出る");
   await otherContext.close();
 
@@ -221,7 +221,7 @@ test("UI-08 ホームページ: ログインしていない人がトップを開
   await page.goto("/");
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByRole("heading", { level: 1 })).toContainText("好きな動画が");
-  await expect(page.getByText("私のデッキ")).toHaveCount(0);
+  await expect(page.getByText("私の単語帳")).toHaveCount(0);
   await shot(page, testInfo, "1. ログインしていないと、トップにホームページが出る（全体）");
 
   const demo = page.locator(".lp-demo");
@@ -247,17 +247,17 @@ test("UI-08 ホームページ: ログインしていない人がトップを開
   await shot(page, testInfo, "5. 「無料で始める」で、新規登録の画面へ");
 });
 
-test("UI-09 ログインしているときのトップは、今までどおりデッキの一覧", async ({ page, context }, testInfo) => {
-  await createDeck(me.id, { name: "わたしのデッキ" });
+test("UI-09 ログインしているときのトップは、今までどおり単語帳の一覧", async ({ page, context }, testInfo) => {
+  await createDeck(me.id, { name: "わたしの単語帳" });
   await loginAs(context, me);
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "デッキ" })).toBeVisible();
-  await expect(page.getByText("わたしのデッキ")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "単語帳" })).toBeVisible();
+  await expect(page.getByText("わたしの単語帳")).toBeVisible();
   await expect(page.locator(".lp")).toHaveCount(0);
-  await shot(page, testInfo, "1. ログインしていると、デッキの一覧が出る");
+  await shot(page, testInfo, "1. ログインしていると、単語帳の一覧が出る");
 });
 
-test("UI-10 動画を探す: ほかの人が学んだ動画が、理解度とレベルに合うかの印つきで出る。デッキ名・見られない動画は出ない。絞り込めて、選ぶとデッキを作れる", async ({ page, context }, testInfo) => {
+test("UI-10 動画を探す: ほかの人が学んだ動画が、理解度とレベルに合うかの印つきで出る。単語帳の名前・見られない動画は出ない。絞り込めて、選ぶと単語帳を作れる", async ({ page, context }, testInfo) => {
   const lines = [
     "I like to walk in the park every morning.", "We had a nice dinner with my family.", "The weather is very good today.",
     "She bought a new book at the store.", "My brother plays soccer after school.", "They went to the beach last summer.",
@@ -265,8 +265,8 @@ test("UI-10 動画を探す: ほかの人が学んだ動画が、理解度とレ
     "A quaint little house sat on the corner.", "Her singing was mesmerizing to everyone.", "She is a meticulous planner at work.",
   ];
   const transcript = lines.map((l, i) => `0:${String(i * 3).padStart(2, "0")} ${l}`).join("\n");
-  await createDeck(other.id, { name: "ほかの人の秘密のデッキ名", videoId: "pubAAAAAAAA", transcript });
-  await createDeck(other.id, { name: "消された動画のデッキ", videoId: "delBBBBBBBB", transcript });
+  await createDeck(other.id, { name: "ほかの人の秘密の単語帳の名前", videoId: "pubAAAAAAAA", transcript });
+  await createDeck(other.id, { name: "消された動画の単語帳", videoId: "delBBBBBBBB", transcript });
   // タイトルは取りずみにしておく（oEmbed には問い合わせない）
   for (const [id, title, available] of [["pubAAAAAAAA", "A Walk in the Park", true], ["delBBBBBBBB", null, false]]) {
     await db().query(
@@ -284,8 +284,8 @@ test("UI-10 動画を探す: ほかの人が学んだ動画が、理解度とレ
   await expect(item.getByText("ちょうどいい")).toBeVisible();
   await expect(item.getByText(/理解度 75%/)).toBeVisible();
   await expect(item.getByText(/1人が学習/)).toBeVisible();
-  await expect(page.getByText("ほかの人の秘密のデッキ名")).toHaveCount(0);
-  await shot(page, testInfo, "1. みんなが学んだ動画が「ちょうどいい・理解度 75%・1人が学習」で出る。消された動画とデッキ名は出ない");
+  await expect(page.getByText("ほかの人の秘密の単語帳の名前")).toHaveCount(0);
+  await shot(page, testInfo, "1. みんなが学んだ動画が「ちょうどいい・理解度 75%・1人が学習」で出る。消された動画と単語帳の名前は出ない");
 
   // 絞り込み（その場で）
   await page.getByLabel("キーワード").fill("cooking");
@@ -298,11 +298,11 @@ test("UI-10 動画を探す: ほかの人が学んだ動画が、理解度とレ
   await expect(recs.locator("li")).toHaveCount(1);
   await shot(page, testInfo, "2. キーワード「park」・レベル「ちょうどいい」で絞り込むと出る（「cooking」や「やさしい」では出ない）");
 
-  await item.getByRole("link", { name: "この動画でデッキを作る" }).click();
+  await item.getByRole("link", { name: "この動画で単語帳を作る" }).click();
   await expect(page).toHaveURL(/\/decks\/new\?/);
   await expect(page.locator('input[name="url"]')).toHaveValue("https://www.youtube.com/watch?v=pubAAAAAAAA");
   await expect(page.locator('input[name="name"]')).toHaveValue("A Walk in the Park");
-  await shot(page, testInfo, "3. 新しいデッキの画面に、動画の URL とタイトルが入っている");
+  await shot(page, testInfo, "3. 新しい単語帳の画面に、動画の URL とタイトルが入っている");
 });
 
 test("UI-11 レベル設定: 選んだレベルを保存すると、保存したあとも選んだレベルが出ている。開き直しても同じ", async ({ page, context }, testInfo) => {
@@ -333,19 +333,19 @@ test("UI-11 レベル設定: 選んだレベルを保存すると、保存した
   await shot(page, testInfo, "4. 語彙数を直接指定して保存しても、入れた数のまま");
 });
 
-test("UI-12 デッキの一覧: 覚えた単語で作った物語のデッキは、淡い色と「物語」の印で、ほかのデッキと区別できる", async ({ page, context }, testInfo) => {
-  await createDeck(me.id, { name: "動画のデッキ" });
+test("UI-12 単語帳の一覧: 覚えた単語で作った物語の単語帳は、淡い色と「物語」の印で、ほかの単語帳と区別できる", async ({ page, context }, testInfo) => {
+  await createDeck(me.id, { name: "動画の単語帳" });
   await createDeck(me.id, { name: "森の物語", kind: "story" });
   await loginAs(context, me);
   await page.goto("/");
 
   const storyRow = page.locator(".decks li", { hasText: "森の物語" });
-  const videoRow = page.locator(".decks li", { hasText: "動画のデッキ" });
+  const videoRow = page.locator(".decks li", { hasText: "動画の単語帳" });
   await expect(storyRow.getByText("物語", { exact: true })).toBeVisible();
   await expect(videoRow.getByText("物語", { exact: true })).toHaveCount(0);
   const bg = (row) => row.locator("a").evaluate((a) => getComputedStyle(a).backgroundColor);
   expect(await bg(storyRow)).not.toBe(await bg(videoRow));
-  await shot(page, testInfo, "1. 物語のデッキだけ、淡い色と「物語」の印が付いている");
+  await shot(page, testInfo, "1. 物語の単語帳だけ、淡い色と「物語」の印が付いている");
 });
 
 // 勉強時間の合計（秒）。送られてくるまで少し待つことがあるので、expect.poll で使う
@@ -354,7 +354,7 @@ const studySeconds = async (userId, kind) =>
     .rows[0].s;
 
 test("UI-13 勉強時間（単語）: 記憶テストの画面で操作していた時間が記録される。2分を超えて何もしない分は数えない", async ({ page, context }, testInfo) => {
-  const deck = await createDeck(me.id, { name: "時間のデッキ" });
+  const deck = await createDeck(me.id, { name: "時間の単語帳" });
   await createCard(deck, { front: "I like to walk in the park.", word: "walk" });
   await loginAs(context, me);
   await page.clock.install({ time: new Date("2026-11-20T03:00:00Z") });
@@ -397,11 +397,11 @@ window.YT = {
 window.onYouTubeIframeAPIReady && window.onYouTubeIframeAPIReady();
 `;
 
-test("UI-14 勉強時間（リスニング）: デッキの画面の動画を再生していた時間が記録される。カードの「動画のこの場面」はその時刻から再生する", async ({ page, context }, testInfo) => {
+test("UI-14 勉強時間（リスニング）: 単語帳の画面の動画を再生していた時間が記録される。カードの「動画のこの場面」はその時刻から再生する", async ({ page, context }, testInfo) => {
   await page.route("https://www.youtube.com/iframe_api", (route) =>
     route.fulfill({ contentType: "text/javascript", body: FAKE_YT_API })
   );
-  const deck = await createDeck(me.id, { name: "動画のデッキ", videoId: "aaaaaaaaaaa" });
+  const deck = await createDeck(me.id, { name: "動画の単語帳", videoId: "aaaaaaaaaaa" });
   const card = await createCard(deck, { front: "I like to walk in the park.", word: "walk" });
   await db().query("UPDATE cards SET video_id = 'aaaaaaaaaaa', start_seconds = 42 WHERE id = $1", [card]);
   await loginAs(context, me);
@@ -417,7 +417,7 @@ test("UI-14 勉強時間（リスニング）: デッキの画面の動画を再
   await page.clock.runFor(45_000); // 45秒再生
   await page.evaluate(() => window.__yt.setState(2)); // 一時停止
   await page.clock.runFor(60_000); // 止めている間は数えない
-  await shot(page, testInfo, "1. デッキの画面で、カードの場面から動画を再生した");
+  await shot(page, testInfo, "1. 単語帳の画面で、カードの場面から動画を再生した");
   await page.goto("/stats");
 
   await expect.poll(() => studySeconds(me.id, "listening")).toBeGreaterThanOrEqual(44);
@@ -462,7 +462,7 @@ Object.defineProperty(window, "speechSynthesis", {
 `;
 
 test("UI-16 記憶テスト: カードが出たら（答えを考える表の面で）英文を自動で読み上げる。→ でめくると読み上げを止める。答えの面では読み上げない。設定で止められる", async ({ page, context }, testInfo) => {
-  const deck = await createDeck(me.id, { name: "読み上げのデッキ" });
+  const deck = await createDeck(me.id, { name: "読み上げの単語帳" });
   await createCard(deck, { front: "I like to walk in the park.", word: "walk" });
   await createCard(deck, { front: "The weather is very good today.", word: "weather" });
   await loginAs(context, me);
@@ -524,7 +524,7 @@ Object.defineProperty(window, "speechSynthesis", {
 `;
 
 test("UI-17 記憶テスト: 次のカードが出ると必ず読み上げる（読み上げ中に前のカードに戻っても・同じカードがもう一度出ても）", async ({ page, context }, testInfo) => {
-  const deck = await createDeck(me.id, { name: "読み上げのデッキ" });
+  const deck = await createDeck(me.id, { name: "読み上げの単語帳" });
   await createCard(deck, { front: "I like to walk in the park.", word: "walk" });
   await createCard(deck, { front: "The weather is very good today.", word: "weather" });
   await loginAs(context, me);
@@ -630,7 +630,7 @@ test("UI-18 物語のスライド: 1文ずつ大きく出し、使った単語�
   await page.keyboard.press("Escape");
   await expect(slides).toHaveCount(0);
 
-  // 自動再生していた時間（2文 + 間）が、このデッキのリスニングとして記録される
+  // 自動再生していた時間（2文 + 間）が、この単語帳のリスニングとして記録される
   await page.goto("/stats");
   await expect.poll(() => studySeconds(me.id, "listening")).toBeGreaterThanOrEqual(1);
   const { rows: t } = await db().query("SELECT DISTINCT deck_id FROM study_time WHERE user_id = $1", [me.id]);
@@ -699,44 +699,44 @@ test("UI-20 はじめの4ステップ: 新しいユーザーのトップに出�
   await expect(panel).toBeVisible();
   await expect(panel).toContainText("0 / 4 完了");
   await expect(panel.getByRole("link", { name: "レベル設定へ" })).toHaveAttribute("href", "/settings");
-  await expect(panel.getByRole("link", { name: "デッキを作る" })).toHaveAttribute("href", "/decks/new");
+  await expect(panel.getByRole("link", { name: "単語帳を作る" })).toHaveAttribute("href", "/decks/new");
   // 3・4 は、前が終わるまで行き先がない
   await expect(panel.getByRole("link", { name: "字幕を貼る" })).toHaveCount(0);
   await shot(page, testInfo, "1. 新しいユーザーのトップ");
 
-  // デッキを作ると 2 にチェックが付き、3 の「字幕を貼る」がそのデッキの取り込みへ
+  // 単語帳を作ると 2 にチェックが付き、3 の「字幕を貼る」がその単語帳の取り込みへ
   const deck = await createDeck(me.id, { name: "最初の動画" });
   await page.reload();
   await expect(panel).toContainText("1 / 4 完了");
   await expect(panel.getByRole("link", { name: "字幕を貼る" })).toHaveAttribute("href", `/decks/${deck}/import`);
-  await shot(page, testInfo, "2. デッキを作ると、次は字幕を貼る");
+  await shot(page, testInfo, "2. 単語帳を作ると、次は字幕を貼る");
 
   await panel.getByRole("button", { name: "閉じる" }).click();
   await expect(panel).toHaveCount(0);
   await page.reload();
-  await expect(page.getByRole("heading", { name: "デッキ" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "単語帳" })).toBeVisible();
   await expect(page.getByRole("region", { name: /はじめの4ステップ/ })).toHaveCount(0);
 });
 
-test("UI-21 はじめの4ステップの途中: レベルを保存すると「次へ」でトップに戻れる。新しいデッキの画面に手順が出て、作るとそのまま字幕を貼る画面へ進む", async ({ page, context }, testInfo) => {
+test("UI-21 はじめの4ステップの途中: レベルを保存すると「次へ」でトップに戻れる。新しい単語帳の画面に手順が出て、作るとそのまま字幕を貼る画面へ進む", async ({ page, context }, testInfo) => {
   await loginAs(context, me);
   await page.goto("/");
   await page.getByRole("link", { name: "レベル設定へ" }).click();
   await page.getByRole("button", { name: "保存" }).click();
-  const next = page.getByRole("link", { name: /次へ：動画を選んで、デッキを作る/ });
+  const next = page.getByRole("link", { name: /次へ：動画を選んで、単語帳を作る/ });
   await expect(next).toBeVisible();
   await shot(page, testInfo, "1. レベルを保存すると「次へ」が出る");
   await next.click();
   const panel = page.getByRole("region", { name: /はじめの4ステップ/ });
   await expect(panel).toContainText("1 / 4 完了");
 
-  await panel.getByRole("link", { name: "デッキを作る" }).click();
-  const guide = page.getByRole("region", { name: "デッキの作り方" });
+  await panel.getByRole("link", { name: "単語帳を作る" }).click();
+  const guide = page.getByRole("region", { name: "単語帳の作り方" });
   await expect(guide).toBeVisible();
   await expect(page.getByRole("link", { name: "動画を探す" }).and(page.locator("main a"))).toHaveCount(0);
-  await shot(page, testInfo, "2. 新しいデッキの画面に手順が出る");
-  await page.getByLabel("デッキ名").fill("最初の動画");
-  await page.getByRole("button", { name: "デッキを作成" }).click();
+  await shot(page, testInfo, "2. 新しい単語帳の画面に手順が出る");
+  await page.getByLabel("単語帳の名前").fill("最初の動画");
+  await page.getByRole("button", { name: "単語帳を作成" }).click();
   await expect(page).toHaveURL(/\/decks\/\d+\/import$/);
   await expect(page.getByRole("heading", { name: "字幕から例文を追加" })).toBeVisible();
   await shot(page, testInfo, "3. 作るとそのまま字幕を貼る画面へ");

@@ -9,7 +9,7 @@ import { copyPublicDeck } from "@/lib/sharing";
 export async function importSharedDeck(deckIdArg) {
   const user = await requireUser();
   const deckId = Number(deckIdArg);
-  if (!Number.isSafeInteger(deckId) || deckId <= 0) return { error: "このデッキは公開されていません" };
+  if (!Number.isSafeInteger(deckId) || deckId <= 0) return { error: "この単語帳は公開されていません" };
   const result = await copyPublicDeck(user.id, deckId);
   if (result.error) return result;
   revalidatePath("/");

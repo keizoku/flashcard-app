@@ -33,7 +33,7 @@ export function useVideoTitle(nameRef) {
 
 export function TitleStatus({ status }) {
   if (status === "loading") return <span className="note small">動画のタイトルを取得中…</span>;
-  if (status === "filled") return <span className="success small">動画のタイトルをデッキ名に入れました</span>;
+  if (status === "filled") return <span className="success small">動画のタイトルを単語帳の名前に入れました</span>;
   if (status === "failed") return <span className="note small">タイトルを取得できませんでした</span>;
   return null;
 }

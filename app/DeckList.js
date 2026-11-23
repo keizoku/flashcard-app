@@ -57,11 +57,11 @@ export default function DeckList({ decks: allDecks }) {
       {hasTags && <TagFilter activeTags={activeTags} candidates={candidates} onChange={filterBy} />}
       <p className="note">
         {activeTags.length
-          ? `タグ「${activeTags.join("」かつ「")}」のデッキ ${decks.length} 個（全 ${allDecks.length} 個）`
-          : `${allDecks.length} 個のデッキ`}
+          ? `タグ「${activeTags.join("」かつ「")}」の単語帳 ${decks.length} 冊（全 ${allDecks.length} 冊）`
+          : `${allDecks.length} 冊の単語帳`}
       </p>
       {decks.length === 0 && (
-        <p className="note small">条件に合うデッキはありません。タグを外してください。</p>
+        <p className="note small">条件に合う単語帳はありません。タグを外してください。</p>
       )}
       <div className="select-bar">
         <button
@@ -75,7 +75,7 @@ export default function DeckList({ decks: allDecks }) {
         {visibleSelected.size > 0 && (
           <ConfirmButton
             label={`選んだ ${visibleSelected.size} 個を削除`}
-            confirmMessage={`デッキ ${visibleSelected.size} 個と、中のカード ${cardCount} 枚を削除します。元に戻せません。`}
+            confirmMessage={`単語帳 ${visibleSelected.size} 冊と、中のカード ${cardCount} 枚を削除します。元に戻せません。`}
             confirmLabel="削除する"
             pendingLabel="削除中…"
             pending={pending}
@@ -97,7 +97,7 @@ export default function DeckList({ decks: allDecks }) {
               className="card-check"
               checked={selected.has(deck.id)}
               onChange={() => toggle(deck.id)}
-              aria-label={`デッキ「${deck.name}」を選ぶ`}
+              aria-label={`単語帳「${deck.name}」を選ぶ`}
             />
             <Link href={`/decks/${deck.id}`}>
               <span className="deck-main">

@@ -17,7 +17,7 @@ test("DP-02 Vercel のビルドでは、先に DB のマイグレーションを
   expect(pkg.scripts["vercel-build"]).toBe("node scripts/migrate.mjs && next build");
 });
 
-test("DP-03 デッキの画面の処理は、絵を自動で作るのを待てる長さまで動ける（Hobby の上限 300 秒以内）", async () => {
+test("DP-03 単語帳の画面の処理は、絵を自動で作るのを待てる長さまで動ける（Hobby の上限 300 秒以内）", async () => {
   const src = readFileSync(path.join(root, "app/decks/[id]/page.js"), "utf8");
   const m = src.match(/export const maxDuration = (\d+);/);
   expect(m).not.toBeNull();

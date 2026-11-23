@@ -14,12 +14,12 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 | [users](#users) | ユーザー | 013（014・019 で列を追加） |
 | [user_sessions](#user_sessions) | ログイン中のセッション | 013 |
 | [email_tokens](#email_tokens) | メールのリンクの合言葉 | 013 |
-| [decks](#decks) | デッキ | 001 |
+| [decks](#decks) | 単語帳 | 001 |
 | [cards](#cards) | カード | 001 |
 | [card_targets](#card_targets) | カードの覚えたい語 | 011 |
 | [review_logs](#review_logs) | 「覚えている / 覚えていない」の記録 | 008 |
 | [tags](#tags) | タグ | 010 |
-| [deck_tags](#deck_tags) | デッキとタグの対応 | 010 |
+| [deck_tags](#deck_tags) | 単語帳とタグの対応 | 010 |
 | [settings](#settings) | レベル設定 | 002 |
 | [known_words](#known_words) | 「知ってる」を押した語 | 002 |
 | [videos](#videos) | おすすめに出す YouTube の動画の情報 | 015（016 で列を変更） |
@@ -40,7 +40,7 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 | password_hash | text | | | `scrypt$<salt>$<hash>`。パスワードそのものは保存しない |
 | verified_at | timestamptz | ○ | | 確認メールのリンクを開いた日時。NULL = まだ（ログインできない） |
 | created_at | timestamptz | | now() | 登録した日時 |
-| display_name | text | ○ | | 表示名（30文字まで）。公開したデッキに、作った人として出す。NULL = まだ決めていない |
+| display_name | text | ○ | | 表示名（30文字まで）。公開した単語帳に、作った人として出す。NULL = まだ決めていない |
 | onboarding_dismissed_at | timestamptz | ○ | | トップの「はじめの4ステップ」を「閉じる」で消した日時（019）。NULL = まだ閉じていない |
 
 - 主キー: `id`
@@ -80,12 +80,12 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 
 ## decks
 
-デッキ。動画1本ぶんの字幕、または AI に書いてもらった物語1つ。
+単語帳。動画1本ぶんの字幕、または AI に書いてもらった物語1つ。
 
 | 列 | 型 | NULL | 初期値 | 説明 |
 | --- | --- | --- | --- | --- |
 | id | integer | | 連番 | 主キー |
-| name | text | | | デッキの名前（100文字まで） |
+| name | text | | | 単語帳の名前（100文字まで） |
 | created_at | timestamptz | | now() | 作った日時 |
 | video_id | text | ○ | | YouTube の動画 ID（11文字） |
 | transcript | text | ○ | | 貼り付けた字幕（200,000文字まで）。物語なら AI の答えの全文 |
@@ -94,8 +94,8 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 | kind | text | | 'video' | `video`（動画の字幕から）/ `story`（物語） |
 | story_words | jsonb | ○ | | 物語で使ってもらった語 |
 | user_id | integer | ○ | | 持ち主。NULL はユーザー管理を入れる前のデータ（最初に登録したユーザーが引き継ぐ） |
-| published_at | timestamptz | ○ | | 公開した日時（みんなのデッキに出す）。NULL = 公開していない |
-| source_deck_id | integer | ○ | | 取り込み元のデッキ（みんなのデッキから取り込んだとき）。元を消すと NULL |
+| published_at | timestamptz | ○ | | 公開した日時（みんなの単語帳に出す）。NULL = 公開していない |
+| source_deck_id | integer | ○ | | 取り込み元の単語帳（みんなの単語帳から取り込んだとき）。元を消すと NULL |
 
 - 主キー: `id`
 - 外部キー: `user_id` → `users.id`（ユーザーを消すと消える）、`source_deck_id` → `decks.id`（元を消すと NULL）
@@ -109,7 +109,7 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 | 列 | 型 | NULL | 初期値 | 説明 |
 | --- | --- | --- | --- | --- |
 | id | integer | | 連番 | 主キー |
-| deck_id | integer | | | 入っているデッキ |
+| deck_id | integer | | | 入っている単語帳 |
 | front | text | | | 表（例文）。500文字まで |
 | back | text | | | 裏（自由記入）。500文字まで |
 | created_at | timestamptz | | now() | 作った日時 |
@@ -130,7 +130,7 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 | ai_translation_form | text | ○ | | 1つ目の覚えたい語に対応する、和訳の中の部分（`card_targets` のコピー） |
 
 - 主キー: `id`
-- 外部キー: `deck_id` → `decks.id`（デッキを消すと消える）
+- 外部キー: `deck_id` → `decks.id`（単語帳を消すと消える）
 - インデックス: `cards_deck_id_idx`（`deck_id`）、`cards_review_due_idx`（`deck_id, review_due_at`。今日出すカードを探す）
 
 ## card_targets
@@ -159,7 +159,7 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 | --- | --- | --- | --- | --- |
 | id | bigint | | 連番 | 主キー |
 | card_id | integer | ○ | | 答えたカード。カードを消すと NULL になる（記録は残す） |
-| deck_id | integer | | | カードが入っていたデッキ。ユーザーの絞り込みに使う |
+| deck_id | integer | | | カードが入っていた単語帳。ユーザーの絞り込みに使う |
 | remembered | boolean | | | true = 覚えている、false = 覚えていない |
 | reviewed_at | timestamptz | | now() | 答えた日時 |
 | prev_box | smallint | ○ | | 答える前の `cards.review_box`（取り消し用） |
@@ -167,12 +167,12 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 | prev_last_reviewed_at | timestamptz | ○ | | 答える前の `cards.last_reviewed_at`（取り消し用） |
 
 - 主キー: `id`
-- 外部キー: `card_id` → `cards.id`（カードを消すと NULL）、`deck_id` → `decks.id`（デッキを消すと消える）
+- 外部キー: `card_id` → `cards.id`（カードを消すと NULL）、`deck_id` → `decks.id`（単語帳を消すと消える）
 - インデックス: `review_logs_reviewed_at_idx`（`reviewed_at`。日ごとの集計）
 
 ## tags
 
-タグの名前。全ユーザーで共有する。どのデッキにも使われなくなったら消す。
+タグの名前。全ユーザーで共有する。どの単語帳にも使われなくなったら消す。
 
 | 列 | 型 | NULL | 初期値 | 説明 |
 | --- | --- | --- | --- | --- |
@@ -184,11 +184,11 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 
 ## deck_tags
 
-どのデッキにどのタグを付けたか。
+どの単語帳にどのタグを付けたか。
 
 | 列 | 型 | NULL | 初期値 | 説明 |
 | --- | --- | --- | --- | --- |
-| deck_id | integer | | | デッキ |
+| deck_id | integer | | | 単語帳 |
 | tag_id | integer | | | タグ |
 
 - 主キー: `deck_id, tag_id`
@@ -227,12 +227,12 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 ## videos
 
 おすすめの動画（みんなが学んだ動画）に出すための、YouTube の動画の情報（[features.md](features.md#13-おすすめの動画librecommendjs)）。
-YouTube の oEmbed（API キー不要）で取る。ユーザーのものではない（どのユーザーのデッキかは入れない）。
+YouTube の oEmbed（API キー不要）で取る。ユーザーのものではない（どのユーザーの単語帳かは入れない）。
 
 | 列 | 型 | NULL | 初期値 | 説明 |
 | --- | --- | --- | --- | --- |
 | video_id | text | | | YouTube の動画 ID（11文字） |
-| title | text | ○ | | 動画のタイトル（YouTube のもの。デッキ名ではない）。見られない動画は NULL |
+| title | text | ○ | | 動画のタイトル（YouTube のもの。単語帳の名前ではない）。見られない動画は NULL |
 | channel_title | text | ○ | | チャンネル名 |
 | checked_at | timestamptz | | now() | oEmbed で取った日時。7日たつと取り直す |
 | available | boolean | | true | oEmbed で取れたか。false = 非公開・消された（おすすめに出さない） |
@@ -249,25 +249,25 @@ YouTube の oEmbed（API キー不要）で取る。ユーザーのものでは�
 | --- | --- | --- | --- | --- |
 | id | bigint | | 連番 | 主キー |
 | user_id | integer | | | 勉強した人 |
-| deck_id | integer | ○ | | 勉強したデッキ。手で足した分・デッキを消したあとは NULL |
+| deck_id | integer | ○ | | 勉強した単語帳。手で足した分・単語帳を消したあとは NULL |
 | kind | text | | | `vocab`（単語）か `listening`（リスニング） |
 | source | text | | 'auto' | `auto`（画面が測った）か `manual`（手で足した） |
 | seconds | integer | | | 秒数。1以上（画面からは1回 600 秒まで、手で足すのは 600 分まで） |
 | recorded_at | timestamptz | | now() | 記録した日時。日ごとの集計は日本時間で区切る |
 
 - 主キー: `id`
-- 外部キー: `user_id` → `users.id`（ユーザーを消すと消える）、`deck_id` → `decks.id`（デッキを消すと NULL。時間の記録は残す）
+- 外部キー: `user_id` → `users.id`（ユーザーを消すと消える）、`deck_id` → `decks.id`（単語帳を消すと NULL。時間の記録は残す）
 - インデックス: `study_time_user_recorded_at_idx`（`user_id, recorded_at`。日ごとの集計）、`study_time_deck_id_idx`（`deck_id`）
 
 ## story_scenes
 
-物語の場面（[features.md](features.md#6-覚えた語で物語を作るlibstoryjslibstorypromptjs)）。物語のデッキの文を4文くらいずつの場面に分け、
-場面ごとに絵を付ける。物語のデッキを初めて開いたときに作る。絵は画像そのものを入れる（取り込んだ画像か、無料の画像生成サービスで作った画像）。
+物語の場面（[features.md](features.md#6-覚えた語で物語を作るlibstoryjslibstorypromptjs)）。物語の単語帳の文を4文くらいずつの場面に分け、
+場面ごとに絵を付ける。物語の単語帳を初めて開いたときに作る。絵は画像そのものを入れる（取り込んだ画像か、無料の画像生成サービスで作った画像）。
 
 | 列 | 型 | NULL | 初期値 | 説明 |
 | --- | --- | --- | --- | --- |
 | id | integer | | 連番 | 主キー |
-| deck_id | integer | | | 物語のデッキ |
+| deck_id | integer | | | 物語の単語帳 |
 | position | integer | | | 場面の順番（0から） |
 | first_sentence | integer | | | 場面の最初の文（`decks.sentences` の番号、0から） |
 | last_sentence | integer | | | 場面の最後の文 |
@@ -278,7 +278,7 @@ YouTube の oEmbed（API キー不要）で取る。ユーザーのものでは�
 | image_updated_at | timestamptz | ○ | | 絵を変えた日時。画像の URL に付けて、古い絵がキャッシュで出ないようにする |
 
 - 主キー: `id`
-- 外部キー: `deck_id` → `decks.id`（デッキを消すと消える）
+- 外部キー: `deck_id` → `decks.id`（単語帳を消すと消える）
 - 一意: `(deck_id, position)`
 
 ## schema_migrations

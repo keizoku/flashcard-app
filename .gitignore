@@ -16,3 +16,7 @@ playwright-report/
 # 販売促進用 PDF の作業用ファイル
 promo/.brochure-build.html
 promo/.preview-*.png
+
+# エディタ（vim）の一時ファイル。.env の中身が入ることがある
+*.swp
+*.swo

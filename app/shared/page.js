@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { listPublicDecks } from "@/lib/sharing";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "みんなのデッキ | フラッシュカード" };
+export const metadata = { title: "みんなの単語帳 | フラッシュカード" };
 
 const dateText = (d) =>
   new Intl.DateTimeFormat("ja-JP", { timeZone: "Asia/Tokyo", year: "numeric", month: "numeric", day: "numeric" }).format(d);
@@ -15,14 +15,14 @@ export default async function SharedDecksPage() {
 
   return (
     <main>
-      <h1>みんなのデッキ</h1>
+      <h1>みんなの単語帳</h1>
       <p className="note">
-        公開されているデッキです。取り込むと、その時点のカードが自分のデッキとしてコピーされます（学習は最初から）。
-        自分のデッキを公開するときは、デッキの「編集」から。
+        公開されている単語帳です。取り込むと、その時点のカードが自分の単語帳としてコピーされます（学習は最初から）。
+        自分の単語帳を公開するときは、単語帳の「編集」から。
       </p>
       {decks.length === 0 ? (
         <div className="empty-state">
-          <p>まだ公開されているデッキはありません。</p>
+          <p>まだ公開されている単語帳はありません。</p>
         </div>
       ) : (
         <ul className="decks shared-decks">
@@ -46,7 +46,7 @@ export default async function SharedDecksPage() {
                   )}
                 </span>
                 <span className="deck-count">
-                  {d.is_mine ? <span className="shared-badge">自分のデッキ</span> : d.imported_deck_id && <span className="shared-badge">取り込みずみ</span>}
+                  {d.is_mine ? <span className="shared-badge">自分の単語帳</span> : d.imported_deck_id && <span className="shared-badge">取り込みずみ</span>}
                   {d.card_count} 枚
                 </span>
               </Link>

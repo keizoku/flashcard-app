@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import { tagCandidates } from "@/lib/tagCandidates";
 
-// デッキの一覧で、さらに絞り込めるタグの候補。サーバーとブラウザで並びが同じになること
+// 単語帳の一覧で、さらに絞り込めるタグの候補。サーバーとブラウザで並びが同じになること
 
 const decks = [
   { tags: ["物語", "旅行", "B"] },

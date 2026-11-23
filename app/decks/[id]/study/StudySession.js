@@ -131,7 +131,7 @@ export default function StudySession({ deckId, cards, studyAll }) {
             ← 最後のカードに戻る
           </button>
           <Link href={`/decks/${deckId}`} className="button-link">
-            デッキに戻る
+            単語帳に戻る
           </Link>
           {!studyAll && (
             <Link href={`/decks/${deckId}/study?all=1`} className="button-link">

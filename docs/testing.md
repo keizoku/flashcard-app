@@ -112,26 +112,27 @@ docker compose run --rm e2e
 | --- | --- |
 | YouTube の URL・時刻（[architecture](architecture.md)） | `unit/youtube.test.js` |
 | 表示用の道具・レベル・記憶テストの間隔 | `unit/format-levels-review.test.js` |
-| タグの整形（[features 1](features.md#1-デッキ)） | `unit/tags.test.js` |
+| タグの整形（[features 1](features.md#1-単語帳)） | `unit/tags.test.js` |
 | タグの保存・ユーザーごとの一覧 | `db/tags-story.test.js` |
 | 字幕の区間・文・段階・理解度（[features 2](features.md#2-字幕の解析libtranscriptjs)） | `unit/transcript.test.js` |
 | 原形・頻出順位・イディオム | `unit/vocab-idioms.test.js` |
 | AI で整えた文の読み取り・プロンプト（[features 5.1](features.md#51-字幕を文に整えるlibsentencesjs)） | `unit/sentences-parse.test.js` |
 | カードの解説・物語のプロンプトと読み取り（[features 5.2, 6](features.md)） | `unit/card-story-prompts.test.js` |
-| デッキ・カードの作成・編集・削除、解説の取り込み（[features 1, 3](features.md)） | `db/decks-cards.test.js` |
+| 単語帳・カードの作成・編集・削除、解説の取り込み（[features 1, 3](features.md)） | `db/decks-cards.test.js` |
 | 字幕の取り込み・カードの登録・「知ってる」・レベル設定・語の状態 | `db/import-settings.test.js` |
 | 記憶テスト・取り消し（[features 4](features.md#4-記憶テスト)） | `db/study.test.js` |
-| 物語のデッキ（[features 6](features.md)） | `db/tags-story.test.js` |
+| 物語の単語帳（[features 6](features.md)） | `db/tags-story.test.js` |
 | パスワードのハッシュ（[auth](auth.md)） | `unit/password.test.js` |
 | メールアドレスの正規化・トークン | `unit/accounts-email.test.js`、`unit/auth-token.test.js` |
 | ログインしていない人の転送（middleware） | `unit/middleware.test.js` |
 | テーブル定義書と DB が同じか（[tables](tables.md)） | `db/schema-doc.test.js` |
 | テスト仕様書とテストの ID が同じか（[test-spec](test-spec.md)） | `unit/test-spec.test.js` |
-| 画面の SQL（他人のデッキは 404、トップ・統計のデータの分離、学習の順） | `db/pages.test.js` |
+| 画面の文言に「デッキ」を使わない（「単語帳」と呼ぶ） | `unit/wording.test.js` |
+| 画面の SQL（他人の単語帳は 404、トップ・統計のデータの分離、学習の順） | `db/pages.test.js` |
 | テスト実行ツールの仕様書の読み取り・結果のまとめ | `unit/test-runner.test.js` |
 | テスト結果レポートの結果のまとめ・HTML | `unit/report.test.js` |
-| デッキの共有（表示名・公開・みんなのデッキ・取り込み、[features 10](features.md#10-デッキの共有libsharingjsappshared)） | `db/sharing.test.js` |
-| 画面の操作（ログイン・ヘッダー・他人のデッキ・学習のキーボード・取り込み・統計・トップ・デッキの共有・ホームページ） | `../e2e/app.spec.mjs`（画面のテスト） |
+| 単語帳の共有（表示名・公開・みんなの単語帳・取り込み、[features 10](features.md#10-単語帳の共有libsharingjsappshared)） | `db/sharing.test.js` |
+| 画面の操作（ログイン・ヘッダー・他人の単語帳・学習のキーボード・取り込み・統計・トップ・単語帳の共有・ホームページ） | `../e2e/app.spec.mjs`（画面のテスト） |
 | セッション・持ち主の確認 | `db/session.test.js` |
 | メールのリンク・登録の完了・以前のデータの引き継ぎ | `db/accounts.test.js` |
 | 登録・ログイン・ログアウト・再送・再設定・パスワードの変更 | `db/auth-actions.test.js` |
@@ -139,6 +140,6 @@ docker compose run --rm e2e
 ## テストしていないもの
 
 - 画面のテスト（UI-01〜09）にない操作（学習の ← と ↑、読み上げ、取り込みの段階の切り替えなど）。変えたときは、ブラウザで確かめる
-- 統計の画面の細かい数（デッキ別の内訳・グラフ・苦手な語の順）。覚え具合の数は UI-05 で確かめている
+- 統計の画面の細かい数（単語帳別の内訳・グラフ・苦手な語の順）。覚え具合の数は UI-05 で確かめている
 - 本物の SMTP・YouTube への通信
 - セットアップのスクリプト（`setup.sh` / `setup.ps1`）。変えたときは実際に動かして確かめる（Windows 版は Windows で）

@@ -27,9 +27,9 @@ export async function addDeck(prevState, formData) {
   if (url && !videoId) return { ...keep, error: "YouTube の URL を読み取れませんでした" };
   // デッキ名が空なら、動画のタイトルを使う
   if (!name && videoId) name = (await fetchVideoTitle(videoId)) ?? "";
-  if (!name) return { ...keep, error: "デッキ名を入力してください" };
+  if (!name) return { ...keep, error: "単語帳の名前を入力してください" };
   if (name.length > MAX_DECK_NAME_LENGTH) {
-    return { ...keep, error: `デッキ名は${MAX_DECK_NAME_LENGTH}文字以内で入力してください` };
+    return { ...keep, error: `単語帳の名前は${MAX_DECK_NAME_LENGTH}文字以内で入力してください` };
   }
   if (transcript.length > MAX_TRANSCRIPT_LENGTH) {
     return { ...keep, error: `字幕が長すぎます（${MAX_TRANSCRIPT_LENGTH.toLocaleString()} 文字まで）` };
@@ -55,7 +55,7 @@ export async function addCard(deckIdArg, prevState, formData) {
   const user = await requireUser();
   const deckId = Number(deckIdArg);
   if (!Number.isSafeInteger(deckId) || deckId <= 0 || !(await ownsDeck(user.id, deckId))) {
-    return { error: "このデッキは見つかりません", front: "", back: "", version: Date.now() };
+    return { error: "この単語帳は見つかりません", front: "", back: "", version: Date.now() };
   }
 
   const front = String(formData.get("front") ?? "").trim();
@@ -74,7 +74,7 @@ export async function addCard(deckIdArg, prevState, formData) {
     [deckId, front, back]
   );
   if (rowCount === 0) {
-    return { error: "このデッキは見つかりません", front, back, version: Date.now() };
+    return { error: "この単語帳は見つかりません", front, back, version: Date.now() };
   }
 
   revalidatePath(`/decks/${deckId}`);
@@ -88,7 +88,7 @@ export async function deleteDecks(deckIds) {
   const ids = (Array.isArray(deckIds) ? deckIds : [])
     .map(Number)
     .filter((n) => Number.isSafeInteger(n) && n > 0);
-  if (ids.length === 0) return { error: "削除するデッキを選んでください" };
+  if (ids.length === 0) return { error: "削除する単語帳を選んでください" };
   if (ids.length > 1000) return { error: "一度に削除できるのは1000個までです" };
   const { rowCount } = await pool.query("DELETE FROM decks WHERE id = ANY($1::int[]) AND user_id = $2", [ids, user.id]);
   revalidatePath("/");

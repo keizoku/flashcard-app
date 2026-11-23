@@ -16,11 +16,11 @@ export default async function NewStoryPage() {
   return (
     <main>
       <p className="back-link">
-        <Link href="/">← デッキ一覧</Link>
+        <Link href="/">← 単語帳の一覧</Link>
       </p>
       <h1>覚えた単語で物語を作る</h1>
       <p className="note">
-        覚えた単語を使った短い物語をチャット AI に書いてもらい、新しいデッキにします。
+        覚えた単語を使った短い物語をチャット AI に書いてもらい、新しい単語帳にします。
         知っている単語を、別の文脈でもう一度見ることで、記憶に定着させます。
       </p>
       <StoryForm counts={counts} decks={decks} />

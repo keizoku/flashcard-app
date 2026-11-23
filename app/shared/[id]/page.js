@@ -21,7 +21,7 @@ export default async function SharedDeckPage({ params }) {
   return (
     <main>
       <p className="back-link">
-        <Link href="/shared">← みんなのデッキ</Link>
+        <Link href="/shared">← みんなの単語帳</Link>
       </p>
       <h1>{deck.name}</h1>
       <p className="note">
@@ -41,12 +41,12 @@ export default async function SharedDeckPage({ params }) {
 
       {deck.is_mine ? (
         <p className="notice">
-          自分のデッキです。<Link href={`/decks/${deck.id}/edit`}>公開をやめるときは「編集」から</Link>
+          自分の単語帳です。<Link href={`/decks/${deck.id}/edit`}>公開をやめるときは「編集」から</Link>
         </p>
       ) : deck.imported_deck_id ? (
         <div className="notice">
           <p>
-            取り込みずみです: <Link href={`/decks/${deck.imported_deck_id}`}>自分のデッキを開く</Link>
+            取り込みずみです: <Link href={`/decks/${deck.imported_deck_id}`}>自分の単語帳を開く</Link>
           </p>
           <ImportButton deckId={deck.id} cardCount={deck.cards.length} again />
         </div>

@@ -102,7 +102,7 @@ export default async function StatsPage() {
           </section>
 
           <section aria-labelledby="by-deck">
-            <h2 id="by-deck">デッキ別</h2>
+            <h2 id="by-deck">単語帳別</h2>
             <Legend />
             <ul className="deck-bars">
               {deckRows.map((d) => (
@@ -123,7 +123,7 @@ export default async function StatsPage() {
               <table>
                 <thead>
                   <tr>
-                    <th scope="col">デッキ</th>
+                    <th scope="col">単語帳</th>
                     {STATUSES.map((s) => (
                       <th key={s.key} scope="col">{s.label}</th>
                     ))}
@@ -311,11 +311,11 @@ function StudyTimeSection({ time }) {
 
       {time.byDeck.length > 0 && (
         <details className="table-view">
-          <summary>デッキ別の時間</summary>
+          <summary>単語帳別の時間</summary>
           <table>
             <thead>
               <tr>
-                <th scope="col">デッキ</th>
+                <th scope="col">単語帳</th>
                 <th scope="col">単語</th>
                 <th scope="col">リスニング</th>
               </tr>

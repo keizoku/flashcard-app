@@ -21,7 +21,7 @@ const doneOf = (o) => Object.fromEntries(o.steps.map((s) => [s.key, s.done]));
 const hrefOf = (o, key) => o.steps.find((s) => s.key === key).href;
 
 describe("はじめの4ステップ", () => {
-  test("OB-01 新しいユーザー: 4つとも未完了で、欄を出す。行き先はレベル設定・新しいデッキ。3と4はまだ行き先がない", async () => {
+  test("OB-01 新しいユーザー: 4つとも未完了で、欄を出す。行き先はレベル設定・新しい単語帳。3と4はまだ行き先がない", async () => {
     const o = await getOnboarding(me.id);
     expect(o.show).toBe(true);
     expect(o.doneCount).toBe(0);
@@ -32,7 +32,7 @@ describe("はじめの4ステップ", () => {
     expect(hrefOf(o, "study")).toBeNull();
   });
 
-  test("OB-02 データを見て自動でチェックが付き、次の行き先が決まる（物語のデッキは字幕を貼る先にしない）", async () => {
+  test("OB-02 データを見て自動でチェックが付き、次の行き先が決まる（物語の単語帳は字幕を貼る先にしない）", async () => {
     await pool.query("INSERT INTO settings (user_id, level_key, vocab_size) VALUES ($1, 'eiken-pre2', 3000)", [me.id]);
     await createDeck(me.id, { name: "物語", kind: "story" });
     const deck = await createDeck(me.id, { name: "動画" });
@@ -90,7 +90,7 @@ describe("はじめの4ステップ", () => {
     expect(formProps(page).nextHref ?? null).toBeNull();
   });
 
-  test("OB-07 新しいデッキの画面: ステップの途中なら手順を出し、「動画を探す」へのリンクは出さない。終わった人には今までどおり", async () => {
+  test("OB-07 新しい単語帳の画面: ステップの途中なら手順を出し、「動画を探す」へのリンクは出さない。終わった人には今までどおり", async () => {
     const open = async () => NewDeckPage({ searchParams: Promise.resolve({}) });
     let page = await open();
     expect(textOf(page)).toContain("YouTube で、見たい英語の動画を開く");
@@ -101,7 +101,7 @@ describe("はじめの4ステップ", () => {
     expect(hrefsOf(page)).toContain("/search");
   });
 
-  test("OB-08 ステップの途中にデッキを作ると、字幕がなくても、そのまま字幕を貼る画面へ進む", async () => {
+  test("OB-08 ステップの途中に単語帳を作ると、字幕がなくても、そのまま字幕を貼る画面へ進む", async () => {
     const { redirectTo } = await runAction(addDeck({}, formData({ name: "最初の動画", url: "", transcript: "" })));
     const deck = (await pool.query("SELECT id FROM decks WHERE user_id = $1", [me.id])).rows[0];
     expect(redirectTo).toBe(`/decks/${deck.id}/import`);

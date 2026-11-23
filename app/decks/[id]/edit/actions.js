@@ -20,14 +20,14 @@ function toId(value) {
 export async function updateDeck(deckIdArg, prevState, formData) {
   const user = await requireUser();
   const deckId = toId(deckIdArg);
-  if (!deckId) return { error: "デッキが見つかりません" };
+  if (!deckId) return { error: "単語帳が見つかりません" };
 
   const name = String(formData.get("name") ?? "").trim();
   const url = String(formData.get("url") ?? "").trim();
   const transcript = String(formData.get("transcript") ?? "").trim();
 
-  if (!name) return { error: "デッキ名を入力してください" };
-  if (name.length > MAX_DECK_NAME_LENGTH) return { error: `デッキ名は${MAX_DECK_NAME_LENGTH}文字以内で入力してください` };
+  if (!name) return { error: "単語帳の名前を入力してください" };
+  if (name.length > MAX_DECK_NAME_LENGTH) return { error: `単語帳の名前は${MAX_DECK_NAME_LENGTH}文字以内で入力してください` };
   const videoId = url ? parseVideoId(url) : null;
   if (url && !videoId) return { error: "YouTube の URL を読み取れませんでした" };
   if (transcript.length > MAX_TRANSCRIPT_LENGTH) {
@@ -38,7 +38,7 @@ export async function updateDeck(deckIdArg, prevState, formData) {
     "UPDATE decks SET name = $2, video_id = $3, transcript = $4 WHERE id = $1 AND user_id = $5",
     [deckId, name, videoId, transcript || null, user.id]
   );
-  if (rowCount === 0) return { error: "デッキが見つかりません" };
+  if (rowCount === 0) return { error: "単語帳が見つかりません" };
   await setDeckTags(deckId, parseTags(formData.get("tags")));
 
   revalidatePath("/");
@@ -49,7 +49,7 @@ export async function updateDeck(deckIdArg, prevState, formData) {
 export async function deleteDeck(deckIdArg) {
   const user = await requireUser();
   const deckId = toId(deckIdArg);
-  if (!deckId) return { error: "デッキが見つかりません" };
+  if (!deckId) return { error: "単語帳が見つかりません" };
   await pool.query("DELETE FROM decks WHERE id = $1 AND user_id = $2", [deckId, user.id]);
   revalidatePath("/");
   redirect("/");
@@ -59,7 +59,7 @@ export async function deleteDeck(deckIdArg) {
 export async function setPublished(deckIdArg, publish) {
   const user = await requireUser();
   const deckId = toId(deckIdArg);
-  if (!deckId) return { error: "デッキが見つかりません" };
+  if (!deckId) return { error: "単語帳が見つかりません" };
   const result = await setDeckPublished(user.id, deckId, Boolean(publish));
   if (result.error) return result;
   revalidatePath(`/decks/${deckId}`);

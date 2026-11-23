@@ -23,10 +23,10 @@ export default function PublishPanel({ deckId, published, displayName }) {
       {published ? (
         <>
           <p>
-            <span className="shared-badge">公開中</span> <Link href={`/shared/${deckId}`}>みんなのデッキ</Link>
+            <span className="shared-badge">公開中</span> <Link href={`/shared/${deckId}`}>みんなの単語帳</Link>
             に出ています（作った人: {displayName}）。
           </p>
-          <p className="note small">公開をやめても、すでに取り込んだ人のデッキは消えません。</p>
+          <p className="note small">公開をやめても、すでに取り込んだ人の単語帳は消えません。</p>
           <button type="button" className="secondary-button" onClick={() => toggle(false)} disabled={pending}>
             {pending ? "変更中…" : "公開をやめる"}
           </button>
@@ -34,7 +34,7 @@ export default function PublishPanel({ deckId, published, displayName }) {
       ) : (
         <>
           <p className="note small">
-            公開すると、ほかのユーザーが「みんなのデッキ」でこのデッキを見て、自分のデッキとして取り込めます
+            公開すると、ほかのユーザーが「みんなの単語帳」でこの単語帳を見て、自分の単語帳として取り込めます
             （そのときのカードと解説がコピーされます。あなたの学習の記録は見えません）。
             {!displayName && (
               <>
@@ -43,7 +43,7 @@ export default function PublishPanel({ deckId, published, displayName }) {
             )}
           </p>
           <button type="button" onClick={() => toggle(true)} disabled={pending}>
-            {pending ? "変更中…" : "このデッキを公開する"}
+            {pending ? "変更中…" : "この単語帳を公開する"}
           </button>
         </>
       )}

@@ -19,7 +19,7 @@ export default function ImportButton({ deckId, cardCount, again = false }) {
   return (
     <div className="import-shared">
       <button type="button" className={again ? "secondary-button" : undefined} onClick={onClick} disabled={pending}>
-        {pending ? "取り込み中…" : again ? "もう一度取り込む（別のデッキになります）" : `自分のデッキに取り込む（${cardCount} 枚）`}
+        {pending ? "取り込み中…" : again ? "もう一度取り込む（別の単語帳になります）" : `自分の単語帳に取り込む（${cardCount} 枚）`}
       </button>
       {error && (
         <p className="error" role="alert">

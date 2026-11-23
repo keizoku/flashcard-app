@@ -6,7 +6,7 @@ import SearchPage from "@/app/search/page";
 import { getRecommendations } from "@/lib/recommend";
 import { createUser, loginAs, resetDb } from "../helpers.js";
 
-// 動画を探す画面（みんなが学んだ動画）と、そこからデッキを作る画面
+// 動画を探す画面（みんなが学んだ動画）と、そこから単語帳を作る画面
 vi.mock("@/lib/recommend", () => ({ getRecommendations: vi.fn() }));
 
 let me;
@@ -58,8 +58,8 @@ describe("おすすめの動画（動画を探す画面）", () => {
   });
 });
 
-describe("おすすめの動画からデッキを作る", () => {
-  test("VS-05 URL とデッキ名（動画のタイトル）を入れた状態で、新しいデッキの画面を開く。戻り先は動画を探すの画面だけ受け付ける", async () => {
+describe("おすすめの動画から単語帳を作る", () => {
+  test("VS-05 URL と単語帳の名前（動画のタイトル）を入れた状態で、新しい単語帳の画面を開く。戻り先は動画を探すの画面だけ受け付ける", async () => {
     let page = await NewDeckPage(sp({ video: "aaaaaaaaaaa", name: "A trip to the sea", back: "/search" }));
     let form = propsOf(page, AddDeckForm);
     expect(form.initial).toEqual({ url: "https://www.youtube.com/watch?v=aaaaaaaaaaa", name: "A trip to the sea" });

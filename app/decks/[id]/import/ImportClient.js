@@ -187,7 +187,7 @@ export default function ImportClient({ deckId, initialUrl, initialText }) {
                 required
               />
             </label>
-            <p className="note small">「文を探す」を押すと、URL と字幕はこのデッキに保存されます。</p>
+            <p className="note small">「文を探す」を押すと、URL と字幕はこの単語帳に保存されます。</p>
           </div>
         </details>
         {error && <p className="error" role="alert">{error}</p>}

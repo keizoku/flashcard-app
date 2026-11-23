@@ -63,28 +63,31 @@ sequenceDiagram
   「今は、決まった人だけが使えます」を出す。ヘッダーとログインの画面には「新規登録」を出さない。
   新規登録の画面を直接開いたときは、決まった人だけが登録できると書く（決めた人は、ここから登録する）
 
-## テスト用のアカウント（`lib/userAdmin.js`、`scripts/create-user.mjs`）
+## テスト用のアカウント（`lib/userAdmin.js`、`scripts/create-user.mjs`、`scripts/reset-user.mjs`）
 
 メールを送らずに、確認済みのアカウントを作る管理用の道具。公開した DB にテスト用のアカウントを用意するときに使う（手順は [deploy.md](deploy.md)）。
 
 - 作るとき: アドレスの形とパスワードの決まり（8〜200文字）は登録の画面と同じ。登録済みのアドレスなら作らない（パスワードも変えない）
 - 作り直すとき: 新しいパスワードにし、確認済みにして、その人のセッションをすべて消す
 - 接続の文字列とパスワードは画面に出さない。手元の `DATABASE_URL` は使わず、毎回つなぐ先を聞く
+- 最初の状態に戻すとき（`resetUserData`、`scripts/reset-user.mjs`）: その人の単語帳（カード・記録などもいっしょに）・レベル設定・「知ってる」の語・
+  勉強時間を消し、「はじめの4ステップ」を閉じた印も消す。アカウント・パスワード・ログインは残す。1つの SQL で行う（途中で失敗したら何も消えない）。
+  消す前に、同じメールアドレスをもう一度入れてもらう
 
 ## データの分離
 
 - すべての画面と Server Action は、最初に `requireUser()` を呼ぶ（`middleware.js` は Cookie の有無しか見ないため）。
-  例外はトップ（`/`）だけ: `getCurrentUser()` で、ログインしていなければホームページ（`app/landing/`）を、していればデッキの一覧を出す
+  例外はトップ（`/`）だけ: `getCurrentUser()` で、ログインしていなければホームページ（`app/landing/`）を、していれば単語帳の一覧を出す
 - 読み書きは必ず自分のものに絞る:
-  - デッキ: `WHERE user_id = $user`、または `ownsDeck(userId, deckId)`
-  - カード: `ownsCard(userId, cardId)`、またはデッキと JOIN して `d.user_id = $user`
-  - 学習の記録: デッキと JOIN（`recordReview` / `undoReview` は `FOR UPDATE OF c` / `OF l` でロック）
+  - 単語帳: `WHERE user_id = $user`、または `ownsDeck(userId, deckId)`
+  - カード: `ownsCard(userId, cardId)`、または単語帳と JOIN して `d.user_id = $user`
+  - 学習の記録: 単語帳と JOIN（`recordReview` / `undoReview` は `FOR UPDATE OF c` / `OF l` でロック）
   - 設定・「知ってる」の語: `user_id`
-- 他人のデッキ・カードの ID を指定されたら、「見つかりません」と同じ扱いにする（存在するかどうかも教えない）
+- 他人の単語帳・カードの ID を指定されたら、「見つかりません」と同じ扱いにする（存在するかどうかも教えない）
 
 ## ユーザー管理より前のデータ
 
-ユーザー管理を入れる前のデッキ・設定・「知ってる」の語は `user_id` が NULL のまま残っている。
+ユーザー管理を入れる前の単語帳・設定・「知ってる」の語は `user_id` が NULL のまま残っている。
 **最初に登録を完了したユーザー**が、登録を完了したときにまとめて引き継ぐ（`activateUser`）。
 2人が同時に完了しても1人だけが引き継ぐよう、`pg_advisory_xact_lock(7301)` で順番に処理する。
 

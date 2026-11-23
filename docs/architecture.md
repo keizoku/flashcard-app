@@ -48,21 +48,21 @@ Docker の代わりに、アプリは Vercel、DB は Neon（どちらも無料�
 
 - Vercel のビルドは `package.json` の `vercel-build`（先に `scripts/migrate.mjs` で DB のマイグレーションを当ててから `next build`）
 - 実行中に `fs` で読む `data/` の語のリストは、`next.config.mjs` の `outputFileTracingIncludes` で公開するファイルに含める
-- デッキの画面は `maxDuration = 120`（秒）。絵の自動生成で、画像生成サービスを最大90秒待つため
+- 単語帳の画面は `maxDuration = 120`（秒）。絵の自動生成で、画像生成サービスを最大90秒待つため
 
 ## ディレクトリ
 
 ```
 app/                 画面（Next.js App Router）
   layout.js          共通のヘッダー（ログイン中は表示名とログアウト）
-  page.js            トップ: デッキ一覧（タグで絞り込み、理解度）
-  actions.js         デッキの作成・削除、カードの追加
+  page.js            トップ: 単語帳の一覧（タグで絞り込み、理解度）
+  actions.js         単語帳の作成・削除、カードの追加
   auth/              ログイン・登録などの Server Action とフォーム
   login/ signup/ verify/ resend/ forgot-password/ reset-password/ account/
-  decks/[id]/        デッキ画面（カード一覧、解説の取り込み、動画プレーヤー、物語の通し読み・スライド）
+  decks/[id]/        単語帳画面（カード一覧、解説の取り込み、動画プレーヤー、物語の通し読み・スライド）
     import/          字幕の解析と、候補の文からカードを登録
     study/           記憶テスト
-    edit/            デッキの編集・削除
+    edit/            単語帳の編集・削除
   cards/[id]/edit/   カードの編集・削除
   stories/new/       覚えた語で物語を作る
   settings/          レベル設定、「知ってる」の語、読み上げの設定
@@ -122,7 +122,7 @@ sequenceDiagram
 | `auth.js` | セッション、`getCurrentUser` / `requireUser`、持ち主の確認 | ○ |
 | `uiPrefs.js` | 画面の小さな好み（説明を閉じたか）を覚える Cookie の名前。画面の部品からも使う | |
 | `onboarding.js` | トップの「はじめの4ステップ」（終わったかの判定・閉じる） | ○ |
-| `userAdmin.js` | メールなしでアカウントを作る・パスワードを作り直す（`scripts/create-user.mjs` から使う） | |
+| `userAdmin.js` | メールなしでアカウントを作る・パスワードを作り直す・データを消して最初の状態に戻す（`scripts/create-user.mjs` / `reset-user.mjs` から使う） | |
 | `passwordHash.js` / `emailAddress.js` | パスワードの決まりとハッシュ / メールアドレスの整え方。Next.js の外の道具からも使うので `password.js` / `accounts.js` から分けてある | |
 | `allowlist.js` | 使える人をメールアドレスで決める（環境変数 `ALLOWED_EMAILS`。空ならだれでも） | |
 | `accounts.js` | メールのリンク（確認・再設定）、登録の完了、メールの文面 | ○ |
@@ -143,9 +143,9 @@ sequenceDiagram
 | `sceneUtils.js` | 場面の分け方、絵の指示文、自動で作る URL、画像の種類の見分け。画面の部品からも使う | |
 | `studyTime.js` | 勉強時間の記録・手で足す・消す・集計 | ○ |
 | `studyClock.js` | 勉強時間の時計（操作・再生のあった間だけ数える）、時間の書き方。画面の部品から使う | |
-| `tagCandidates.js` | デッキの一覧で、さらに絞り込めるタグの候補（件数の多い順、同じ件数なら文字コード順）。画面の部品から使う | |
-| `story.js` / `storyPrompt.js` | 物語のプロンプト、答えからデッキを作る | ○ |
-| `recommend.js` | おすすめの動画（ほかの人が字幕付きでデッキにした動画を、自分のレベルで解析して並べる） | ○ |
+| `tagCandidates.js` | 単語帳の一覧で、さらに絞り込めるタグの候補（件数の多い順、同じ件数なら文字コード順）。画面の部品から使う | |
+| `story.js` / `storyPrompt.js` | 物語のプロンプト、答えから単語帳を作る | ○ |
+| `recommend.js` | おすすめの動画（ほかの人が字幕付きで単語帳にした動画を、自分のレベルで解析して並べる） | ○ |
 | `videoFilter.js` | 動画を探す画面の絞り込み（キーワード・レベル・長さ）。画面の部品からも使う | |
 | `youtube.js` / `videoTitle.js` / `format.js` / `levels.js` | 小さな道具 | |
 
@@ -156,7 +156,7 @@ sequenceDiagram
 
 | 相手 | 使い方 | 失敗したとき |
 | --- | --- | --- |
-| YouTube oEmbed | デッキ名が空のとき、動画タイトルを取る。おすすめの動画のタイトル・チャンネル名を取る（API キー不要、5秒で打ち切り） | タイトルなし（手で入力）/ おすすめに出さない |
+| YouTube oEmbed | 単語帳の名前が空のとき、動画タイトルを取る。おすすめの動画のタイトル・チャンネル名を取る（API キー不要、5秒で打ち切り） | タイトルなし（手で入力）/ おすすめに出さない |
 | YouTube の埋め込み（youtube-nocookie.com） | 検索結果の動画を、その場で再生する | — |
 | SMTP | 登録・再設定のメール | 「メールを送れませんでした」と表示 |
 | チャット AI | アプリからは呼ばない。ユーザーがプロンプトをコピーし、答えを貼り付ける | — |

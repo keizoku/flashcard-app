@@ -23,7 +23,7 @@ export const maxDuration = 120;
 // リクエストのたびに DB から読み直す
 export const dynamic = "force-dynamic";
 
-const NOTICES = { imported: "みんなのデッキから取り込みました。学習は最初からです。" };
+const NOTICES = { imported: "みんなの単語帳から取り込みました。学習は最初からです。" };
 
 export default async function DeckPage({ params, searchParams }) {
   const user = await requireUser();
@@ -110,7 +110,7 @@ export default async function DeckPage({ params, searchParams }) {
   return (
     <main>
       <p className="back-link">
-        <Link href="/">← デッキ一覧</Link>
+        <Link href="/">← 単語帳の一覧</Link>
       </p>
       {NOTICES[notice] && (
         <p className="notice" role="status">
@@ -120,7 +120,7 @@ export default async function DeckPage({ params, searchParams }) {
       <h1>{deck.name}</h1>
       {deck.published_at && (
         <p className="note small">
-          <span className="shared-badge">公開中</span> <Link href={`/shared/${deck.id}`}>みんなのデッキ</Link>に出ています
+          <span className="shared-badge">公開中</span> <Link href={`/shared/${deck.id}`}>みんなの単語帳</Link>に出ています
         </p>
       )}
       <p className="actions-row">
@@ -140,7 +140,7 @@ export default async function DeckPage({ params, searchParams }) {
           </a>
         )}
         <Link href={`/decks/${deck.id}/edit`} className="button-link">
-          デッキを編集・削除
+          単語帳を編集・削除
         </Link>
       </p>
       {isStory && storySentences.length > 0 && (

@@ -23,7 +23,7 @@ async function ownedDeckId(value) {
 
 export async function getCardPrompt(deckIdArg) {
   const deckId = await ownedDeckId(deckIdArg);
-  if (!deckId) return { error: "デッキが見つかりません" };
+  if (!deckId) return { error: "単語帳が見つかりません" };
   const { rows } = await pool.query(
     `SELECT id, front, target_form, target_word, ai_meaning, ai_translation_form FROM cards
      WHERE deck_id = $1 AND ${NEEDS_EXPLANATION} ORDER BY id LIMIT $2`,
@@ -37,7 +37,7 @@ export async function getCardPrompt(deckIdArg) {
 // チャット AI の答えを読み取って、カードに保存する
 export async function importCardExplanations(deckIdArg, text) {
   const deckId = await ownedDeckId(deckIdArg);
-  if (!deckId) return { error: "デッキが見つかりません" };
+  if (!deckId) return { error: "単語帳が見つかりません" };
   if (String(text ?? "").length > 200_000) return { error: "貼り付けたテキストが長すぎます" };
 
   const parsed = parseCardExplanations(text);
@@ -103,7 +103,7 @@ export async function importCardExplanations(deckIdArg, text) {
 // 選んだカードをまとめて削除する（このデッキのカードだけ）
 export async function deleteCards(deckIdArg, cardIds) {
   const deckId = await ownedDeckId(deckIdArg);
-  if (!deckId) return { error: "デッキが見つかりません" };
+  if (!deckId) return { error: "単語帳が見つかりません" };
   const ids = (Array.isArray(cardIds) ? cardIds : []).map(toId).filter(Boolean);
   if (ids.length === 0) return { error: "削除するカードを選んでください" };
   if (ids.length > 1000) return { error: "一度に削除できるのは1000枚までです" };

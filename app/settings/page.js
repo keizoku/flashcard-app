@@ -22,7 +22,7 @@ export default async function SettingsPage() {
   return (
     <main>
       <p className="back-link">
-        <Link href="/">← デッキ一覧</Link>
+        <Link href="/">← 単語帳の一覧</Link>
       </p>
       <h1>レベル設定</h1>
       <p className="note">

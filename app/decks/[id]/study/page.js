@@ -47,7 +47,7 @@ export default async function StudyPage({ params, searchParams }) {
         <div className="study-empty">
           <h1>今日学習するカードはありません</h1>
           {next[0].total === 0 ? (
-            <p className="note">このデッキにはまだカードがありません。</p>
+            <p className="note">この単語帳にはまだカードがありません。</p>
           ) : (
             <>
               <p className="note">

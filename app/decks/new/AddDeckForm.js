@@ -29,7 +29,7 @@ export default function AddDeckForm({ allTags = [], initial = { url: "", name: "
         />
       </label>
       <label>
-        デッキ名
+        単語帳の名前
         <input
           ref={nameRef}
           name="name"
@@ -69,7 +69,7 @@ export default function AddDeckForm({ allTags = [], initial = { url: "", name: "
       </details>
       {state.error && <p className="error" role="alert">{state.error}</p>}
       <button type="submit" disabled={pending}>
-        {pending ? "作成中…" : "デッキを作成"}
+        {pending ? "作成中…" : "単語帳を作成"}
       </button>
     </form>
   );

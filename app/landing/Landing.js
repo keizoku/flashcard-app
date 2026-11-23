@@ -156,8 +156,8 @@ export default function Landing({ inviteOnly = false }) {
           <Feature title="覚えた単語で物語を作る" icon="❋">
             覚えた単語・覚え中の単語を使った短い物語を AI に書いてもらい、まとめて読み返せます。
           </Feature>
-          <Feature title="みんなのデッキ" icon="⇄">
-            ほかの人が公開したデッキを、そのまま自分のデッキとして取り込めます。あなたのデッキも公開できます。
+          <Feature title="みんなの単語帳" icon="⇄">
+            ほかの人が公開した単語帳を、そのまま自分の単語帳として取り込めます。あなたの単語帳も公開できます。
           </Feature>
         </div>
       </section>

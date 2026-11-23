@@ -46,7 +46,7 @@ beforeEach(async () => {
 });
 
 describe("場面", () => {
-  test("SC-05 自分の物語のデッキに、初めて開いたときに場面を作る（2回目からは同じもの）。他人のデッキ・動画のデッキ・ないデッキは null。デッキを消すと場面も消える", async () => {
+  test("SC-05 自分の物語の単語帳に、初めて開いたときに場面を作る（2回目からは同じもの）。他人の単語帳・動画の単語帳・ない単語帳は null。単語帳を消すと場面も消える", async () => {
     const scenes = await ensureScenes(me.id, story);
     expect(scenes.map((s) => [s.position, s.first, s.last])).toEqual([[0, 0, 2], [1, 3, 5], [2, 6, 8]]);
     expect(scenes[0].prompt).toBe(`${STYLE} Sentence number 1. Sentence number 2. Sentence number 3.`);

@@ -5,30 +5,12 @@
 //
 // 接続の文字列とパスワードは、打っても画面に出さない。コマンドの履歴にも残らない。
 // 手元の DB（DATABASE_URL）は使わない。毎回、つなぐ先の文字列を聞く。
-import { createInterface } from "node:readline";
 import pg from "pg";
+import { ask } from "./prompt.mjs";
 
 // lib/ のファイルを ES モジュールとして読むときの、node の注意書き（動きには関係ない）を出さない
 process.removeAllListeners("warning");
 const { createVerifiedUser, setUserPassword } = await import("../lib/userAdmin.js");
-
-// 1行を聞く。hidden なら、打った文字を画面に出さない
-function ask(question, { hidden = false } = {}) {
-  return new Promise((resolve) => {
-    const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true });
-    if (hidden) {
-      rl._writeToOutput = (s) => {
-        // 質問の文だけは出す。打った文字は出さない
-        if (s.startsWith(question)) rl.output.write(question);
-      };
-    }
-    rl.question(question, (answer) => {
-      rl.close();
-      if (hidden) process.stdout.write("\n");
-      resolve(answer.trim());
-    });
-  });
-}
 
 async function askPassword() {
   for (;;) {

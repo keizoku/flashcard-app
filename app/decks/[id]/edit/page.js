@@ -30,7 +30,7 @@ export default async function DeckEditPage({ params }) {
       <p className="back-link">
         <Link href={`/decks/${deck.id}`}>← {deck.name}</Link>
       </p>
-      <h1>デッキを編集</h1>
+      <h1>単語帳を編集</h1>
       <DeckEditForm
         deck={{ id: deck.id, name: deck.name, transcript: deck.transcript }}
         initialUrl={deck.video_id ? videoUrl(deck.video_id) : ""}

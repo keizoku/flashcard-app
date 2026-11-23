@@ -43,7 +43,7 @@ export default function StoryForm({ counts, decks }) {
         const r = await createStory({ answer, words: result.words });
         if (r?.error) setError(r.error);
       } catch {
-        setError("デッキを作れませんでした。ページを再読み込みしてから、もう一度試してください");
+        setError("単語帳を作れませんでした。ページを再読み込みしてから、もう一度試してください");
       }
     });
   }
@@ -68,9 +68,9 @@ export default function StoryForm({ counts, decks }) {
           )}
         </div>
         <label>
-          どのデッキの単語から
+          どの単語帳の単語から
           <select value={deckId} onChange={(e) => setDeckId(e.target.value)}>
-            <option value="">すべてのデッキ</option>
+            <option value="">すべての単語帳</option>
             {decks.map((d) => (
               <option key={d.id} value={d.id}>
                 {d.name}
@@ -137,7 +137,7 @@ export default function StoryForm({ counts, decks }) {
             </li>
             <li>
               <button type="button" onClick={create} disabled={pending || !answer.trim()}>
-                {pending && answer ? "作成中…" : "物語のデッキを作る"}
+                {pending && answer ? "作成中…" : "物語の単語帳を作る"}
               </button>
             </li>
           </ol>
