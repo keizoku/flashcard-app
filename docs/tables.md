@@ -22,7 +22,6 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 | [deck_tags](#deck_tags) | 単語帳とタグの対応 | 010 |
 | [settings](#settings) | レベル設定 | 002 |
 | [known_words](#known_words) | 「知ってる」を押した語 | 002 |
-| [videos](#videos) | おすすめに出す YouTube の動画の情報 | 015（016 で列を変更） |
 | [study_time](#study_time) | 勉強時間（単語・リスニング） | 017 |
 | [story_scenes](#story_scenes) | 物語の場面と、場面の絵 | 018 |
 | [schema_migrations](#schema_migrations) | 当てたマイグレーション | `scripts/migrate.mjs` |
@@ -224,24 +223,9 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 - 外部キー: `user_id` → `users.id`（ユーザーを消すと消える）
 - インデックス: `known_words_user_word_idx`（一意、`user_id, word`）
 
-## videos
-
-おすすめの動画（みんなが学んだ動画）に出すための、YouTube の動画の情報（[features.md](features.md#13-おすすめの動画librecommendjs)）。
-YouTube の oEmbed（API キー不要）で取る。ユーザーのものではない（どのユーザーの単語帳かは入れない）。
-
-| 列 | 型 | NULL | 初期値 | 説明 |
-| --- | --- | --- | --- | --- |
-| video_id | text | | | YouTube の動画 ID（11文字） |
-| title | text | ○ | | 動画のタイトル（YouTube のもの。単語帳の名前ではない）。見られない動画は NULL |
-| channel_title | text | ○ | | チャンネル名 |
-| checked_at | timestamptz | | now() | oEmbed で取った日時。7日たつと取り直す |
-| available | boolean | | true | oEmbed で取れたか。false = 非公開・消された（おすすめに出さない） |
-
-- 主キー: `video_id`
-
 ## study_time
 
-勉強時間（[features.md](features.md#14-勉強時間libstudytimejslibstudyclockjs)）。単語を覚えた時間（記憶テストの画面で操作していた時間）と、
+勉強時間（[features.md](features.md#12-勉強時間libstudytimejslibstudyclockjs)）。単語を覚えた時間（記憶テストの画面で操作していた時間）と、
 リスニングの時間（アプリの中で動画を再生していた時間）。画面から30秒ごとなどに少しずつ送られてくるので、
 1行は「その間に勉強した秒数」。統計の画面で手で足した分も入る。
 

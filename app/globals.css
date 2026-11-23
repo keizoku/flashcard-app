@@ -942,60 +942,6 @@ kbd {
 .import-shared button:disabled,
 .publish-panel button:disabled { opacity: 0.5; cursor: default; }
 
-/* 動画を探す（app/search） */
-.search-page { max-width: 760px; }
-.search-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
-.search-q input, .search-grid select { width: 100%; min-width: 0; box-sizing: border-box; }
-.search-results { margin-top: 8px; }
-.video-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
-.video-result {
-  display: grid;
-  grid-template-columns: 240px 1fr;
-  gap: 16px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px;
-}
-.video-thumb { position: relative; aspect-ratio: 16 / 9; border-radius: 6px; overflow: hidden; background: #000; }
-.video-thumb iframe { width: 100%; height: 100%; border: 0; display: block; }
-.thumb-button { all: unset; cursor: pointer; display: block; width: 100%; height: 100%; position: relative; }
-.thumb-button img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.thumb-time {
-  position: absolute; right: 6px; bottom: 6px;
-  background: rgba(0, 0, 0, 0.8); color: #fff; font-size: 0.75rem; padding: 1px 5px; border-radius: 4px;
-}
-.thumb-play {
-  position: absolute; inset: 0; margin: auto; width: 44px; height: 44px; border-radius: 50%;
-  display: grid; place-items: center; background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 1rem;
-  opacity: 0.85;
-}
-.thumb-button:hover .thumb-play { opacity: 1; background: #c4302b; }
-.video-body { min-width: 0; display: grid; gap: 6px; align-content: start; }
-.video-title { font-size: 1rem; margin: 0; line-height: 1.4; }
-.video-title a { text-decoration: none; }
-.video-title a:hover { text-decoration: underline; }
-.video-body .note { margin: 0; }
-.video-badges { margin: 0; }
-.badge { display: inline-block; font-size: 0.75rem; padding: 1px 8px; border-radius: 999px; background: #e7f5ea; color: #2e7d32; }
-.badge.muted { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
-.video-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
-.video-actions .secondary-button, .video-actions .button-link { padding: 6px 12px; font-size: 0.9rem; }
-.button-link.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
-.search-pager { display: flex; justify-content: space-between; margin: 16px 0 0; }
-.search-pager a:only-child { margin-left: auto; }
-.search-page code { font-size: 0.85em; }
-@media (max-width: 600px) {
-  .video-result { grid-template-columns: 1fr; }
-}
-.recommendations { margin-top: 28px; }
-.section-title { font-size: 1.15rem; margin: 0 0 4px; }
-.badge.fit-good { background: #e7f5ea; color: #2e7d32; }
-.badge.fit-easy { background: #e7f0fd; color: #1c5fc4; }
-.badge.fit-hard { background: #fdecea; color: #c0392b; }
-.search-form .note { margin: 0; }
-.search-count { margin: 0; }
-
 /* トップの「はじめの4ステップ」（app/Onboarding.js） */
 .onboarding {
   border: 1px solid var(--border);

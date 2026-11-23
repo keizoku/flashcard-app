@@ -7,15 +7,13 @@ import { addDeck } from "@/app/actions";
 
 const initialState = { error: null, name: "", url: "", transcript: "", version: 0 };
 
-// initial: 「動画を探す」から来たときの、URL とデッキ名
-export default function AddDeckForm({ allTags = [], initial = { url: "", name: "" } }) {
-  const [state, formAction, pending] = useActionState(addDeck, { ...initialState, ...initial });
-  const fromSearch = Boolean(initial.url);
+export default function AddDeckForm({ allTags = [] }) {
+  const [state, formAction, pending] = useActionState(addDeck, initialState);
   const nameRef = useRef(null);
   const { status, onUrlChange } = useVideoTitle(nameRef);
 
   return (
-    // エラーのときは入力を残したまま作り直す（成功したら、作ったデッキの画面へ移る）
+    // エラーのときは入力を残したまま作り直す（成功したら、作った単語帳の画面へ移る）
     <form action={formAction} className="add-form" key={state.version}>
       <label>
         YouTube の URL（任意）
@@ -24,7 +22,7 @@ export default function AddDeckForm({ allTags = [], initial = { url: "", name: "
           defaultValue={state.url}
           placeholder="https://www.youtube.com/watch?v=..."
           inputMode="url"
-          autoFocus={!fromSearch}
+          autoFocus
           onChange={(e) => onUrlChange(e.target.value)}
         />
       </label>
@@ -43,21 +41,12 @@ export default function AddDeckForm({ allTags = [], initial = { url: "", name: "
         <span className="field-label">タグ（任意）</span>
         <TagEditor key={state.version} initialTags={state.tags ?? []} allTags={allTags} />
       </div>
-      <details open={Boolean(state.transcript) || fromSearch}>
+      <details open={Boolean(state.transcript)}>
         <summary className="summary-label">字幕も入れる（任意）</summary>
         <div className="details-body">
-          {fromSearch && (
-            <p className="note small">
-              <a href={state.url || initial.url} target="_blank" rel="noopener noreferrer">
-                動画を YouTube で開き
-              </a>
-              、説明の下の「文字起こしを表示」を押して、出てきた字幕をすべて選んでコピーし、ここに貼り付けます。
-            </p>
-          )}
           <label>
             字幕のテキスト
             <textarea
-              autoFocus={fromSearch}
               name="transcript"
               defaultValue={state.transcript}
               rows={6}

@@ -145,19 +145,17 @@ sequenceDiagram
 | `studyClock.js` | 勉強時間の時計（操作・再生のあった間だけ数える）、時間の書き方。画面の部品から使う | |
 | `tagCandidates.js` | 単語帳の一覧で、さらに絞り込めるタグの候補（件数の多い順、同じ件数なら文字コード順）。画面の部品から使う | |
 | `story.js` / `storyPrompt.js` | 物語のプロンプト、答えから単語帳を作る | ○ |
-| `recommend.js` | おすすめの動画（ほかの人が字幕付きで単語帳にした動画を、自分のレベルで解析して並べる） | ○ |
-| `videoFilter.js` | 動画を探す画面の絞り込み（キーワード・レベル・長さ）。画面の部品からも使う | |
 | `youtube.js` / `videoTitle.js` / `format.js` / `levels.js` | 小さな道具 | |
 
 `import "server-only"` が付いたファイルは、ブラウザ側に入らない（Next.js がビルド時に止める）。
-`youtube.js` / `format.js` / `levels.js` / `review.js` / `videoFilter.js` / `tagCandidates.js` / `studyClock.js` / `sceneUtils.js` / `uiPrefs.js` は画面の部品からも使う。
+`youtube.js` / `format.js` / `levels.js` / `review.js` / `tagCandidates.js` / `studyClock.js` / `sceneUtils.js` / `uiPrefs.js` は画面の部品からも使う。
 
 ## 外部とのつながり
 
 | 相手 | 使い方 | 失敗したとき |
 | --- | --- | --- |
-| YouTube oEmbed | 単語帳の名前が空のとき、動画タイトルを取る。おすすめの動画のタイトル・チャンネル名を取る（API キー不要、5秒で打ち切り） | タイトルなし（手で入力）/ おすすめに出さない |
-| YouTube の埋め込み（youtube-nocookie.com） | 検索結果の動画を、その場で再生する | — |
+| YouTube oEmbed | 単語帳の名前が空のとき、動画タイトルを取る（API キー不要、5秒で打ち切り） | タイトルなし（手で入力） |
+| YouTube の埋め込み（youtube-nocookie.com） | 単語帳の画面などで、カードの場面から動画を再生する | — |
 | SMTP | 登録・再設定のメール | 「メールを送れませんでした」と表示 |
 | チャット AI | アプリからは呼ばない。ユーザーがプロンプトをコピーし、答えを貼り付ける | — |
 | Web Speech API | ブラウザの読み上げ（声と速さは localStorage に保存） | ボタンを出さない |

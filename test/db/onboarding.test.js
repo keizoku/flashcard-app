@@ -90,7 +90,7 @@ describe("はじめの4ステップ", () => {
     expect(formProps(page).nextHref ?? null).toBeNull();
   });
 
-  test("OB-07 新しい単語帳の画面: ステップの途中なら手順を出し、「動画を探す」へのリンクは出さない。終わった人には今までどおり", async () => {
+  test("OB-07 新しい単語帳の画面: ステップの途中なら手順を出す。終わった人には出さない。どちらでも「動画を探す」へのリンクはない", async () => {
     const open = async () => NewDeckPage({ searchParams: Promise.resolve({}) });
     let page = await open();
     expect(textOf(page)).toContain("YouTube で、見たい英語の動画を開く");
@@ -98,7 +98,7 @@ describe("はじめの4ステップ", () => {
     await runAction(dismissOnboarding());
     page = await open();
     expect(textOf(page)).not.toContain("YouTube で、見たい英語の動画を開く");
-    expect(hrefsOf(page)).toContain("/search");
+    expect(hrefsOf(page)).not.toContain("/search");
   });
 
   test("OB-08 ステップの途中に単語帳を作ると、字幕がなくても、そのまま字幕を貼る画面へ進む", async () => {

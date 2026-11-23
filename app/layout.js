@@ -20,7 +20,6 @@ export default async function RootLayout({ children }) {
             <div className="nav-links">
               {user ? (
                 <>
-                  <Link href="/search">動画を探す</Link>
                   <Link href="/shared">みんなの単語帳</Link>
                   <Link href="/stats">統計</Link>
                   <Link href="/settings">レベル設定</Link>

@@ -257,54 +257,6 @@ test("UI-09 ログインしているときのトップは、今までどおり�
   await shot(page, testInfo, "1. ログインしていると、単語帳の一覧が出る");
 });
 
-test("UI-10 動画を探す: ほかの人が学んだ動画が、理解度とレベルに合うかの印つきで出る。単語帳の名前・見られない動画は出ない。絞り込めて、選ぶと単語帳を作れる", async ({ page, context }, testInfo) => {
-  const lines = [
-    "I like to walk in the park every morning.", "We had a nice dinner with my family.", "The weather is very good today.",
-    "She bought a new book at the store.", "My brother plays soccer after school.", "They went to the beach last summer.",
-    "He drinks coffee before work every day.", "The children are playing in the garden.", "We watched a movie on Friday night.",
-    "A quaint little house sat on the corner.", "Her singing was mesmerizing to everyone.", "She is a meticulous planner at work.",
-  ];
-  const transcript = lines.map((l, i) => `0:${String(i * 3).padStart(2, "0")} ${l}`).join("\n");
-  await createDeck(other.id, { name: "ほかの人の秘密の単語帳の名前", videoId: "pubAAAAAAAA", transcript });
-  await createDeck(other.id, { name: "消された動画の単語帳", videoId: "delBBBBBBBB", transcript });
-  // タイトルは取りずみにしておく（oEmbed には問い合わせない）
-  for (const [id, title, available] of [["pubAAAAAAAA", "A Walk in the Park", true], ["delBBBBBBBB", null, false]]) {
-    await db().query(
-      "INSERT INTO videos (video_id, title, channel_title, available, checked_at) VALUES ($1, $2, 'Some Channel', $3, now())",
-      [id, title, available]
-    );
-  }
-  await loginAs(context, me);
-
-  await page.goto("/search");
-  await expect(page.getByText("YouTube で探す")).toHaveCount(0);
-  const recs = page.locator(".recommendations");
-  await expect(recs.locator("li")).toHaveCount(1);
-  const item = recs.locator("li").filter({ hasText: "A Walk in the Park" });
-  await expect(item.getByText("ちょうどいい")).toBeVisible();
-  await expect(item.getByText(/理解度 75%/)).toBeVisible();
-  await expect(item.getByText(/1人が学習/)).toBeVisible();
-  await expect(page.getByText("ほかの人の秘密の単語帳の名前")).toHaveCount(0);
-  await shot(page, testInfo, "1. みんなが学んだ動画が「ちょうどいい・理解度 75%・1人が学習」で出る。消された動画と単語帳の名前は出ない");
-
-  // 絞り込み（その場で）
-  await page.getByLabel("キーワード").fill("cooking");
-  await expect(recs.locator("li")).toHaveCount(0);
-  await expect(page.getByText("条件に合う動画がありません")).toBeVisible();
-  await page.getByLabel("キーワード").fill("park");
-  await page.getByLabel("レベル").selectOption("easy");
-  await expect(recs.locator("li")).toHaveCount(0);
-  await page.getByLabel("レベル").selectOption("good");
-  await expect(recs.locator("li")).toHaveCount(1);
-  await shot(page, testInfo, "2. キーワード「park」・レベル「ちょうどいい」で絞り込むと出る（「cooking」や「やさしい」では出ない）");
-
-  await item.getByRole("link", { name: "この動画で単語帳を作る" }).click();
-  await expect(page).toHaveURL(/\/decks\/new\?/);
-  await expect(page.locator('input[name="url"]')).toHaveValue("https://www.youtube.com/watch?v=pubAAAAAAAA");
-  await expect(page.locator('input[name="name"]')).toHaveValue("A Walk in the Park");
-  await shot(page, testInfo, "3. 新しい単語帳の画面に、動画の URL とタイトルが入っている");
-});
-
 test("UI-11 レベル設定: 選んだレベルを保存すると、保存したあとも選んだレベルが出ている。開き直しても同じ", async ({ page, context }, testInfo) => {
   await loginAs(context, me);
   await page.goto("/settings");

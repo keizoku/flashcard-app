@@ -5,7 +5,7 @@ import { hashToken } from "@/lib/auth";
 
 const TABLES = [
   "review_logs", "card_targets", "cards", "deck_tags", "tags", "decks",
-  "known_words", "settings", "email_tokens", "user_sessions", "users", "videos", "study_time", "story_scenes",
+  "known_words", "settings", "email_tokens", "user_sessions", "users", "study_time", "story_scenes",
 ];
 
 // すべてのテーブルを空にして、Cookie と送ったメールも消す
