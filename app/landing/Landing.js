@@ -4,7 +4,8 @@ import "./landing.css";
 
 // ホームページ（ログインしていない人がトップを開いたときに出す）。
 // アプリでできることだけを書く（数字や利用者の声などは作らない）。
-export default function Landing() {
+// inviteOnly: 使える人を決めている（ALLOWED_EMAILS）とき。「無料で始める」を出さず、決まった人だけと伝える
+export default function Landing({ inviteOnly = false }) {
   return (
     <main className="lp">
       {/* はじめの画面 */}
@@ -26,14 +27,20 @@ export default function Landing() {
             難しすぎない。簡単すぎない。だから、続きます。
           </p>
           <div className="lp-cta-row">
-            <Link href="/signup" className="lp-button lp-primary">
-              無料で始める
-            </Link>
+            {inviteOnly ? (
+              <Link href="/login" className="lp-button lp-primary">
+                ログイン
+              </Link>
+            ) : (
+              <Link href="/signup" className="lp-button lp-primary">
+                無料で始める
+              </Link>
+            )}
             <a href="#how" className="lp-button lp-ghost">
               使い方を見る
             </a>
           </div>
-          <p className="lp-fine">登録はメールアドレスだけ。料金はかかりません。</p>
+          <p className="lp-fine">{inviteOnly ? INVITE_ONLY_NOTE : "登録はメールアドレスだけ。料金はかかりません。"}</p>
         </div>
         <div className="lp-hero-visual">
           <DemoCard />
@@ -224,12 +231,14 @@ export default function Landing() {
       {/* 最後の呼びかけ */}
       <section className="lp-final">
         <h2>次に見る動画から、始めよう。</h2>
-        <p>登録は 1 分。最初の 1 枚を作るまで、5 分もかかりません。</p>
+        <p>{inviteOnly ? INVITE_ONLY_NOTE : "登録は 1 分。最初の 1 枚を作るまで、5 分もかかりません。"}</p>
         <div className="lp-cta-row lp-center">
-          <Link href="/signup" className="lp-button lp-primary">
-            無料で始める
-          </Link>
-          <Link href="/login" className="lp-button lp-ghost">
+          {!inviteOnly && (
+            <Link href="/signup" className="lp-button lp-primary">
+              無料で始める
+            </Link>
+          )}
+          <Link href="/login" className={`lp-button ${inviteOnly ? "lp-primary" : "lp-ghost"}`}>
             ログイン
           </Link>
         </div>
@@ -237,6 +246,8 @@ export default function Landing() {
     </main>
   );
 }
+
+const INVITE_ONLY_NOTE = "今は、決まった人だけが使えます。新しい登録は受け付けていません。";
 
 function Feature({ title, icon, children }) {
   return (

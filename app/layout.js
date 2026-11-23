@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { logout } from "@/app/auth/actions";
+import { isSignupOpen } from "@/lib/allowlist";
 import { getCurrentUser } from "@/lib/auth";
 import "./globals.css";
 
@@ -34,7 +35,8 @@ export default async function RootLayout({ children }) {
               ) : (
                 <>
                   <Link href="/login">ログイン</Link>
-                  <Link href="/signup">新規登録</Link>
+                  {/* 使える人を決めているときは、新規登録を出さない */}
+                  {isSignupOpen() && <Link href="/signup">新規登録</Link>}
                 </>
               )}
             </div>

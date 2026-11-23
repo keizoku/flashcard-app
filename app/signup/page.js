@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SignupForm } from "@/app/auth/AuthForms";
+import { isSignupOpen } from "@/lib/allowlist";
 import { getCurrentUser } from "@/lib/auth";
 
 export const metadata = { title: "新規登録 | フラッシュカード" };
@@ -10,6 +11,11 @@ export default async function SignupPage() {
   return (
     <main className="auth-page">
       <h1>新規登録</h1>
+      {!isSignupOpen() && (
+        <p className="error" role="note">
+          今は、決まった人だけが使えます。決まった人のメールアドレスでなければ、登録できません。
+        </p>
+      )}
       <p className="note">
         メールアドレスに確認メールが届きます。メールのリンクを開くと登録が完了します。
       </p>

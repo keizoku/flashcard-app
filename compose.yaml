@@ -68,6 +68,8 @@ services:
       DATABASE_URL: postgres://flashcard:flashcard@db:5432/flashcard
       SMTP_HOST: mailpit
       SMTP_PORT: "1025"
+      # 手元の .env で使える人を決めていても、画面のテストはだれでも登録できる状態で動かす
+      ALLOWED_EMAILS: ""
       TZ: Asia/Tokyo
     volumes:
       - .:/app

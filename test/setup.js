@@ -7,6 +7,9 @@ import { testDatabaseUrl } from "./dbUrl.js";
 // （vi.mock はファイルの先頭に移されるので、中では globalThis 経由で値を共有する）
 process.env.DATABASE_URL = testDatabaseUrl();
 process.env.APP_URL = "http://localhost:3000";
+// 手元で使える人を決めていても（.env の ALLOWED_EMAILS）、テストはだれでも使える状態で始める。
+// 決めたときの動きは、そのテストの中で設定して確かめる（allowlist.test.js など）
+delete process.env.ALLOWED_EMAILS;
 delete globalThis.pgPool;
 
 // Cookie（ブラウザの代わりに、ここに保存する）

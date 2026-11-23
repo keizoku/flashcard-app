@@ -29,7 +29,7 @@ git config core.hooksPath .githooks
 | `vitest.config.mjs` | `@/` の別名、`server-only` を空にする、テストファイルを1つずつ順に実行する |
 | `test/globalSetup.js` | 最初に1回: テスト用 DB `flashcard_unittest` を作り直し、`db/migrations` を最初から当てる |
 | `test/dbUrl.js` | テスト用 DB の接続先。名前が `_test` / `_unittest` で終わらなければ止まる（開発の DB を消さないため） |
-| `test/setup.js` | 各ファイルの前に: DB の接続先を差し替え、Next.js の部品などを偽物にする（下の表） |
+| `test/setup.js` | 各ファイルの前に: DB の接続先を差し替え、Next.js の部品などを偽物にする（下の表）。手元の `.env` で使える人を決めていても（`ALLOWED_EMAILS`）、消して、だれでも使える状態で始める（画面のテストも `compose.yaml` で空にする） |
 | `test/helpers.js` | `resetDb`（全テーブルを空に）、`createUser`、`loginAs`、`createDeck`、`createCard`、`runAction` など |
 | `test/unit/` | DB を使わないテスト |
 | `test/db/` | DB を使うテスト（各テストの前に `resetDb`） |
