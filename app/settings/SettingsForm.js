@@ -1,12 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { startTransition, useActionState, useState } from "react";
 import { LEVELS, MAX_VOCAB_SIZE, MIN_VOCAB_SIZE } from "@/lib/levels";
 import { saveSettings } from "./actions";
 
 const GROUPS = [...new Set(LEVELS.map((l) => l.group))];
 
-export default function SettingsForm({ levelKey, vocabSize }) {
+// nextHref: はじめの4ステップの途中なら "/"。保存したあとに「次へ」のボタンを出す
+export default function SettingsForm({ levelKey, vocabSize, nextHref = null }) {
   const [state, formAction, pending] = useActionState(saveSettings, { error: null, saved: false });
   const [selected, setSelected] = useState(levelKey);
   const level = LEVELS.find((l) => l.key === selected);
@@ -61,6 +63,13 @@ export default function SettingsForm({ levelKey, vocabSize }) {
       <button type="submit" disabled={pending}>
         {pending ? "保存中…" : "保存"}
       </button>
+      {state.saved && !pending && nextHref && (
+        <p className="next-step">
+          <Link href={nextHref} className="button-link study-link">
+            次へ：動画を選んで、デッキを作る →
+          </Link>
+        </p>
+      )}
     </form>
   );
 }

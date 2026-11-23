@@ -699,7 +699,7 @@ test("UI-20 はじめの4ステップ: 新しいユーザーのトップに出�
   await expect(panel).toBeVisible();
   await expect(panel).toContainText("0 / 4 完了");
   await expect(panel.getByRole("link", { name: "レベル設定へ" })).toHaveAttribute("href", "/settings");
-  await expect(panel.getByRole("link", { name: "動画を探す" })).toHaveAttribute("href", "/search");
+  await expect(panel.getByRole("link", { name: "デッキを作る" })).toHaveAttribute("href", "/decks/new");
   // 3・4 は、前が終わるまで行き先がない
   await expect(panel.getByRole("link", { name: "字幕を貼る" })).toHaveCount(0);
   await shot(page, testInfo, "1. 新しいユーザーのトップ");
@@ -716,4 +716,52 @@ test("UI-20 はじめの4ステップ: 新しいユーザーのトップに出�
   await page.reload();
   await expect(page.getByRole("heading", { name: "デッキ" })).toBeVisible();
   await expect(page.getByRole("region", { name: /はじめの4ステップ/ })).toHaveCount(0);
+});
+
+test("UI-21 はじめの4ステップの途中: レベルを保存すると「次へ」でトップに戻れる。新しいデッキの画面に手順が出て、作るとそのまま字幕を貼る画面へ進む", async ({ page, context }, testInfo) => {
+  await loginAs(context, me);
+  await page.goto("/");
+  await page.getByRole("link", { name: "レベル設定へ" }).click();
+  await page.getByRole("button", { name: "保存" }).click();
+  const next = page.getByRole("link", { name: /次へ：動画を選んで、デッキを作る/ });
+  await expect(next).toBeVisible();
+  await shot(page, testInfo, "1. レベルを保存すると「次へ」が出る");
+  await next.click();
+  const panel = page.getByRole("region", { name: /はじめの4ステップ/ });
+  await expect(panel).toContainText("1 / 4 完了");
+
+  await panel.getByRole("link", { name: "デッキを作る" }).click();
+  const guide = page.getByRole("region", { name: "デッキの作り方" });
+  await expect(guide).toBeVisible();
+  await expect(page.getByRole("link", { name: "動画を探す" }).and(page.locator("main a"))).toHaveCount(0);
+  await shot(page, testInfo, "2. 新しいデッキの画面に手順が出る");
+  await page.getByLabel("デッキ名").fill("最初の動画");
+  await page.getByRole("button", { name: "デッキを作成" }).click();
+  await expect(page).toHaveURL(/\/decks\/\d+\/import$/);
+  await expect(page.getByRole("heading", { name: "字幕から例文を追加" })).toBeVisible();
+  await shot(page, testInfo, "3. 作るとそのまま字幕を貼る画面へ");
+});
+
+
+test("UI-22 字幕をコピーする方法: はじめは開いて出る。閉じると1行だけになり、読み込み直しても1行のまま。押せばまた読める", async ({ page, context }, testInfo) => {
+  const deck = await createDeck(me.id, { name: "動画" });
+  await loginAs(context, me);
+  await page.goto(`/decks/${deck}/import`);
+  const help = page.getByRole("region", { name: "YouTube の字幕をコピーする方法" });
+  await expect(help).toBeVisible();
+  await expect(help.getByText("「文字起こしを表示」を押す")).toBeVisible();
+  await shot(page, testInfo, "1. はじめは開いて出る");
+
+  await help.getByRole("button", { name: "閉じる" }).click();
+  await expect(help).toHaveCount(0);
+  const line = page.locator("details.help");
+  await expect(line).toBeVisible();
+  await expect(line.getByText("「文字起こしを表示」を押す")).toBeHidden();
+
+  await page.reload();
+  await expect(page.getByRole("region", { name: "YouTube の字幕をコピーする方法" })).toHaveCount(0);
+  await expect(line.locator("summary")).toHaveText("YouTube の字幕をコピーする方法");
+  await shot(page, testInfo, "2. 閉じたあとは1行だけ");
+  await line.locator("summary").click();
+  await expect(line.getByText("「文字起こしを表示」を押す")).toBeVisible();
 });

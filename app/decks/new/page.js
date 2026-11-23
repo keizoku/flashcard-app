@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
+import { getOnboarding } from "@/lib/onboarding";
 import { getAllTags } from "@/lib/tags";
 import { isValidVideoId, videoUrl } from "@/lib/youtube";
 import AddDeckForm from "./AddDeckForm";
@@ -22,6 +23,8 @@ export default async function NewDeckPage({ searchParams }) {
   };
   // 戻り先は、このアプリの「動画を探す」の画面だけ（ほかのサイトへは飛ばさない）
   const backToSearch = one(q.back) === "/search" ? "/search" : null;
+  // はじめの4ステップの途中なら、デッキの作り方の手順を出す（「動画を探す」は慣れてからなので出さない）
+  const guiding = (await getOnboarding(user.id)).show;
 
   return (
     <main>
@@ -29,7 +32,8 @@ export default async function NewDeckPage({ searchParams }) {
         {backToSearch ? <Link href={backToSearch}>← 動画を探すに戻る</Link> : <Link href="/">← デッキ一覧</Link>}
       </p>
       <h1>新しいデッキ</h1>
-      {!initial.url && (
+      {guiding && !initial.url && <DeckSteps />}
+      {!guiding && !initial.url && (
         <p className="note small">
           使う動画が決まっていなければ、<Link href="/search">動画を探す</Link>から選べます。
         </p>
@@ -38,3 +42,18 @@ export default async function NewDeckPage({ searchParams }) {
     </main>
   );
 }
+
+// はじめの4ステップの、ステップ2の手順
+function DeckSteps() {
+  return (
+    <section className="guide-box" aria-label="デッキの作り方">
+      <p className="guide-title">ステップ2：動画を選んで、デッキを作る</p>
+      <ol>
+        <li>YouTube で、見たい英語の動画を開く（字幕［CC］が出る動画を選んでください。次のステップで字幕を使います）</li>
+        <li>ブラウザの上のアドレス（URL）をコピーする。スマートフォンなら「共有」→「コピー」</li>
+        <li>下の「YouTube の URL」に貼って、「デッキを作成」を押す（デッキ名は動画のタイトルが自動で入ります）</li>
+      </ol>
+    </section>
+  );
+}
+

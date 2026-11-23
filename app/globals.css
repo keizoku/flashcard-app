@@ -168,6 +168,17 @@ a { color: inherit; }
 .help { margin: 0 0 8px; color: var(--muted); font-size: 0.9rem; }
 .help summary { cursor: pointer; }
 .help ol { margin: 8px 0 0; padding-left: 1.4em; }
+/* 開いた状態（はじめ）。目に入るように枠で囲む */
+.help-open {
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--text);
+  border-radius: 8px;
+  background: var(--card);
+  padding: 12px 16px;
+  margin: 0 0 16px;
+}
+.help-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 
 /* 覚えたい語（英文）と、それに当たる和訳の部分。ひと目でわかるよう、色付きの太字にする */
 :root { --target: #d9480f; --target-bg: #fff1c2; }
@@ -1028,3 +1039,16 @@ kbd {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* はじめの4ステップの途中に出す手順（新しいデッキの画面など） */
+.guide-box {
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--text);
+  border-radius: 8px;
+  background: var(--card);
+  padding: 12px 16px;
+  margin: 0 0 16px;
+}
+.guide-box .guide-title { margin: 0 0 6px; font-weight: 600; }
+.guide-box ol { margin: 0; padding-left: 1.4em; display: grid; gap: 4px; }
+.add-form .next-step { margin: 4px 0 0; }

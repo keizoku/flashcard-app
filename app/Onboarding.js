@@ -4,7 +4,7 @@ import { dismissOnboarding } from "./actions";
 // トップの「はじめの4ステップ」（lib/onboarding.js）。新しく登録した人を、使い方の順に案内する
 const LABELS = {
   level: { title: "自分のレベルを決める", note: "知らない単語がひとつだけの文を探すのに使います", link: "レベル設定へ" },
-  deck: { title: "動画を選んで、デッキを作る", note: "おすすめの動画から選べます。YouTube の URL を入れてもOK", link: "動画を探す" },
+  deck: { title: "動画を選んで、デッキを作る", note: "YouTube の動画のアドレス（URL）を貼るだけです", link: "デッキを作る" },
   cards: { title: "字幕を貼って、覚えたい文を選ぶ", note: "チェックした文がカードになります", link: "字幕を貼る" },
   study: { title: "記憶テストをやってみる", note: "覚えている / 覚えていないで答えると、ちょうどいい間隔でまた出ます", link: "学習する" },
 };

@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, test } from "vitest";
-import { dismissOnboarding } from "@/app/actions";
+import { addDeck, dismissOnboarding } from "@/app/actions";
+import NewDeckPage from "@/app/decks/new/page";
+import SettingsPage from "@/app/settings/page";
 import Home from "@/app/page";
 import { pool } from "@/lib/db";
 import { getOnboarding } from "@/lib/onboarding";
-import { createCard, createDeck, createUser, loginAs, resetDb, runAction } from "../helpers.js";
+import { createCard, createDeck, createUser, formData, loginAs, resetDb, runAction } from "../helpers.js";
 
 // トップの「はじめの4ステップ」（lib/onboarding.js、docs/features.md）
 let me;
@@ -19,13 +21,13 @@ const doneOf = (o) => Object.fromEntries(o.steps.map((s) => [s.key, s.done]));
 const hrefOf = (o, key) => o.steps.find((s) => s.key === key).href;
 
 describe("はじめの4ステップ", () => {
-  test("OB-01 新しいユーザー: 4つとも未完了で、欄を出す。行き先はレベル設定・動画を探す。3と4はまだ行き先がない", async () => {
+  test("OB-01 新しいユーザー: 4つとも未完了で、欄を出す。行き先はレベル設定・新しいデッキ。3と4はまだ行き先がない", async () => {
     const o = await getOnboarding(me.id);
     expect(o.show).toBe(true);
     expect(o.doneCount).toBe(0);
     expect(o.steps.map((s) => s.key)).toEqual(["level", "deck", "cards", "study"]);
     expect(hrefOf(o, "level")).toBe("/settings");
-    expect(hrefOf(o, "deck")).toBe("/search");
+    expect(hrefOf(o, "deck")).toBe("/decks/new");
     expect(hrefOf(o, "cards")).toBeNull();
     expect(hrefOf(o, "study")).toBeNull();
   });
@@ -77,4 +79,57 @@ describe("はじめの4ステップ", () => {
     await runAction(dismissOnboarding());
     expect(find(await Home({ searchParams: Promise.resolve({}) }))).toBeNull();
   });
+
+  test("OB-06 レベル設定の画面: ステップの途中なら、保存したあと「次へ」でトップに戻れるようにする。終わった人には出さない", async () => {
+    const formProps = (node) => findProps(node, (p) => "levelKey" in p);
+    let page = await SettingsPage();
+    expect(formProps(page).nextHref).toBe("/");
+    expect(hrefsOf(page)).toContain("/");
+    await runAction(dismissOnboarding());
+    page = await SettingsPage();
+    expect(formProps(page).nextHref ?? null).toBeNull();
+  });
+
+  test("OB-07 新しいデッキの画面: ステップの途中なら手順を出し、「動画を探す」へのリンクは出さない。終わった人には今までどおり", async () => {
+    const open = async () => NewDeckPage({ searchParams: Promise.resolve({}) });
+    let page = await open();
+    expect(textOf(page)).toContain("YouTube で、見たい英語の動画を開く");
+    expect(hrefsOf(page)).not.toContain("/search");
+    await runAction(dismissOnboarding());
+    page = await open();
+    expect(textOf(page)).not.toContain("YouTube で、見たい英語の動画を開く");
+    expect(hrefsOf(page)).toContain("/search");
+  });
+
+  test("OB-08 ステップの途中にデッキを作ると、字幕がなくても、そのまま字幕を貼る画面へ進む", async () => {
+    const { redirectTo } = await runAction(addDeck({}, formData({ name: "最初の動画", url: "", transcript: "" })));
+    const deck = (await pool.query("SELECT id FROM decks WHERE user_id = $1", [me.id])).rows[0];
+    expect(redirectTo).toBe(`/decks/${deck.id}/import`);
+  });
 });
+
+// JSX の中の文字をすべてつなげる（部品の中身までは開かない。手順の部品だけは開く）
+function textOf(node) {
+  if (node == null || typeof node === "boolean") return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(textOf).join("");
+  if (typeof node.type === "function" && node.type.name === "DeckSteps") return textOf(node.type(node.props));
+  return textOf(node.props?.children);
+}
+function hrefsOf(node, out = []) {
+  if (node == null || typeof node !== "object") return out;
+  if (Array.isArray(node)) {
+    node.forEach((n) => hrefsOf(n, out));
+    return out;
+  }
+  if (typeof node.type === "function" && node.type.name === "DeckSteps") return hrefsOf(node.type(node.props), out);
+  if (node.props?.href) out.push(node.props.href);
+  hrefsOf(node.props?.children, out);
+  return out;
+}
+function findProps(node, match) {
+  if (node == null || typeof node !== "object") return null;
+  if (Array.isArray(node)) return node.map((n) => findProps(n, match)).find(Boolean) ?? null;
+  if (node.props && match(node.props)) return node.props;
+  return findProps(node.props?.children, match);
+}

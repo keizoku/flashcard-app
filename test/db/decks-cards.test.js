@@ -58,7 +58,8 @@ describe("デッキ", () => {
     expect(await getDeckTags(mine)).toEqual(["a"]);
   });
 
-  test("DK-09 addDeck: 字幕がなければデッキの画面へ", async () => {
+  test("DK-09 addDeck: 字幕がなければデッキの画面へ（はじめの4ステップを閉じたあと。途中なら字幕を貼る画面へ: OB-08）", async () => {
+    await pool.query("UPDATE users SET onboarding_dismissed_at = now()");
     const { redirectTo } = await runAction(addDeck({}, formData({ name: "no transcript", url: "", transcript: "" })));
     const deck = (await pool.query("SELECT id FROM decks")).rows[0];
     expect(redirectTo).toBe(`/decks/${deck.id}`);

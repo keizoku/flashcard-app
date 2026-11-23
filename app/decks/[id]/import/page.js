@@ -1,9 +1,12 @@
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { pool } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
+import { CAPTION_HELP_CLOSED, CAPTION_HELP_COOKIE } from "@/lib/uiPrefs";
 import { videoUrl } from "@/lib/youtube";
+import CaptionHelp from "./CaptionHelp";
 import ImportClient from "./ImportClient";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +24,8 @@ export default async function ImportPage({ params }) {
   const deck = rows[0];
   if (!deck) notFound();
   const settings = await getSettings(user.id);
+  // 字幕のコピー方法: はじめは開いて出す。「閉じる」を押した人には1行だけ
+  const helpClosed = (await cookies()).get(CAPTION_HELP_COOKIE)?.value === CAPTION_HELP_CLOSED;
 
   return (
     <main>
@@ -32,15 +37,7 @@ export default async function ImportPage({ params }) {
         いまのレベル: <strong>{settings.levelLabel}</strong>（上位 {settings.vocabSize.toLocaleString()} 語）{" "}
         <Link href="/settings">変更</Link>
       </p>
-      <details className="help">
-        <summary>YouTube の字幕をコピーする方法</summary>
-        <ol>
-          <li>パソコンのブラウザで YouTube の動画を開く</li>
-          <li>動画の説明欄の下にある「文字起こしを表示」を押す</li>
-          <li>右側に出た文字起こしを、マウスで最初から最後まで選択してコピー</li>
-          <li>下の欄に貼り付ける（時刻が一緒に入っていると、カードからその場面を再生できます）</li>
-        </ol>
-      </details>
+      <CaptionHelp initialClosed={helpClosed} />
       <ImportClient
         deckId={deck.id}
         initialUrl={deck.video_id ? videoUrl(deck.video_id) : ""}

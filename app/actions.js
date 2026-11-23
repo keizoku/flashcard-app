@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ownsDeck, requireUser } from "@/lib/auth";
 import { pool } from "@/lib/db";
-import { dismissOnboardingFor } from "@/lib/onboarding";
+import { dismissOnboardingFor, getOnboarding } from "@/lib/onboarding";
 import { MAX_TRANSCRIPT_LENGTH } from "@/lib/transcript";
 import { parseTags, setDeckTags } from "@/lib/tags";
 import { fetchVideoTitle } from "@/lib/videoTitle";
@@ -43,8 +43,10 @@ export async function addDeck(prevState, formData) {
   if (tags.length) await setDeckTags(rows[0].id, tags);
 
   revalidatePath("/");
-  // 作ったデッキへ移る。字幕があれば、そのまま例文を探す画面へ
-  redirect(transcript ? `/decks/${rows[0].id}/import` : `/decks/${rows[0].id}`);
+  // 作ったデッキへ移る。字幕があれば、そのまま例文を探す画面へ。
+  // はじめの4ステップの途中なら、字幕がなくても字幕を貼る画面へ（次のステップに迷わないように）
+  const guiding = !transcript && (await getOnboarding(user.id)).show;
+  redirect(transcript || guiding ? `/decks/${rows[0].id}/import` : `/decks/${rows[0].id}`);
 }
 
 // カードを1枚追加する（デッキ画面のフォームから呼ばれる）
