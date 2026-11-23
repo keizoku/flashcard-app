@@ -62,6 +62,7 @@ erDiagram
 | 016_videos_oembed.sql | 動画の情報を API キーなし（oEmbed）で取る形に（公開の状態・長さ・埋め込みの列を消し、available を足す） |
 | 017_study_time.sql | 勉強時間（study_time） |
 | 018_story_scenes.sql | 物語の場面と、場面の絵（story_scenes） |
+| 019_onboarding.sql | 「はじめの4ステップ」を閉じた日時（users.onboarding_dismissed_at） |
 
 決まり:
 - 当てたファイルは書き換えない。直すときは次の番号のファイルを足す

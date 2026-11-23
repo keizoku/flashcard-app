@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ownsDeck, requireUser } from "@/lib/auth";
 import { pool } from "@/lib/db";
+import { dismissOnboardingFor } from "@/lib/onboarding";
 import { MAX_TRANSCRIPT_LENGTH } from "@/lib/transcript";
 import { parseTags, setDeckTags } from "@/lib/tags";
 import { fetchVideoTitle } from "@/lib/videoTitle";
@@ -98,4 +99,11 @@ export async function getVideoTitle(url) {
   const videoId = parseVideoId(url);
   if (!videoId) return { title: null };
   return { title: await fetchVideoTitle(videoId) };
+}
+
+// トップの「はじめの4ステップ」を閉じる（自分の分だけ）
+export async function dismissOnboarding() {
+  const user = await requireUser();
+  await dismissOnboardingFor(user.id);
+  revalidatePath("/");
 }

@@ -120,6 +120,7 @@ sequenceDiagram
 | --- | --- | --- |
 | `db.js` | 接続プール（ホットリロードで増えないよう globalThis に1つ） | ○ |
 | `auth.js` | セッション、`getCurrentUser` / `requireUser`、持ち主の確認 | ○ |
+| `onboarding.js` | トップの「はじめの4ステップ」（終わったかの判定・閉じる） | ○ |
 | `userAdmin.js` | メールなしでアカウントを作る・パスワードを作り直す（`scripts/create-user.mjs` から使う） | |
 | `passwordHash.js` / `emailAddress.js` | パスワードの決まりとハッシュ / メールアドレスの整え方。Next.js の外の道具からも使うので `password.js` / `accounts.js` から分けてある | |
 | `allowlist.js` | 使える人をメールアドレスで決める（環境変数 `ALLOWED_EMAILS`。空ならだれでも） | |

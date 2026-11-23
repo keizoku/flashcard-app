@@ -11,7 +11,7 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 
 | テーブル | 内容 | 作ったマイグレーション |
 | --- | --- | --- |
-| [users](#users) | ユーザー | 013 |
+| [users](#users) | ユーザー | 013（014・019 で列を追加） |
 | [user_sessions](#user_sessions) | ログイン中のセッション | 013 |
 | [email_tokens](#email_tokens) | メールのリンクの合言葉 | 013 |
 | [decks](#decks) | デッキ | 001 |
@@ -41,6 +41,7 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 | verified_at | timestamptz | ○ | | 確認メールのリンクを開いた日時。NULL = まだ（ログインできない） |
 | created_at | timestamptz | | now() | 登録した日時 |
 | display_name | text | ○ | | 表示名（30文字まで）。公開したデッキに、作った人として出す。NULL = まだ決めていない |
+| onboarding_dismissed_at | timestamptz | ○ | | トップの「はじめの4ステップ」を「閉じる」で消した日時（019）。NULL = まだ閉じていない |
 
 - 主キー: `id`
 - インデックス: `users_email_idx`（一意、`lower(email)`）

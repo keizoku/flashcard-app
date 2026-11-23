@@ -691,3 +691,29 @@ test("UI-19 物語の場面の絵: 場面ごとに指示文が出る。画像を
   await expect(scenes.first().locator(".scene-noimage")).toBeVisible();
   await expect(page.locator(".scenes summary")).toHaveText("場面の絵（0 / 2 枚）");
 });
+
+test("UI-20 はじめの4ステップ: 新しいユーザーのトップに出る。終わったステップにチェックが付き、次の行き先に進める。閉じると出なくなる", async ({ page, context }, testInfo) => {
+  await loginAs(context, me);
+  await page.goto("/");
+  const panel = page.getByRole("region", { name: /はじめの4ステップ/ });
+  await expect(panel).toBeVisible();
+  await expect(panel).toContainText("0 / 4 完了");
+  await expect(panel.getByRole("link", { name: "レベル設定へ" })).toHaveAttribute("href", "/settings");
+  await expect(panel.getByRole("link", { name: "動画を探す" })).toHaveAttribute("href", "/search");
+  // 3・4 は、前が終わるまで行き先がない
+  await expect(panel.getByRole("link", { name: "字幕を貼る" })).toHaveCount(0);
+  await shot(page, testInfo, "1. 新しいユーザーのトップ");
+
+  // デッキを作ると 2 にチェックが付き、3 の「字幕を貼る」がそのデッキの取り込みへ
+  const deck = await createDeck(me.id, { name: "最初の動画" });
+  await page.reload();
+  await expect(panel).toContainText("1 / 4 完了");
+  await expect(panel.getByRole("link", { name: "字幕を貼る" })).toHaveAttribute("href", `/decks/${deck}/import`);
+  await shot(page, testInfo, "2. デッキを作ると、次は字幕を貼る");
+
+  await panel.getByRole("button", { name: "閉じる" }).click();
+  await expect(panel).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "デッキ" })).toBeVisible();
+  await expect(page.getByRole("region", { name: /はじめの4ステップ/ })).toHaveCount(0);
+});

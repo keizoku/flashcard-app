@@ -984,3 +984,47 @@ kbd {
 .badge.fit-hard { background: #fdecea; color: #c0392b; }
 .search-form .note { margin: 0; }
 .search-count { margin: 0; }
+
+/* トップの「はじめの4ステップ」（app/Onboarding.js） */
+.onboarding {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  padding: 14px 16px 6px;
+  margin: 0 0 24px;
+}
+.onboarding-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.onboarding-head h2 { margin: 0; font-size: 1.05rem; }
+.onboarding-steps { list-style: none; margin: 10px 0 0; padding: 0; }
+.onboarding-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.onboarding-step .button-link { flex-shrink: 0; padding: 6px 12px; font-size: 0.9rem; }
+.onboarding-mark {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.onboarding-step.next .onboarding-mark { border-color: var(--text); color: var(--text); font-weight: 600; }
+.onboarding-step.done .onboarding-mark { background: #2e7d32; border-color: #2e7d32; color: #fff; }
+.onboarding-step.done .onboarding-body strong { color: var(--muted); font-weight: normal; text-decoration: line-through; }
+.onboarding-body { display: grid; gap: 2px; flex: 1; min-width: 0; }
+.onboarding-body .note, .onboarding-head .note { margin: 0; }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

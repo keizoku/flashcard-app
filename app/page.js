@@ -3,7 +3,9 @@ import { isSignupOpen } from "@/lib/allowlist";
 import { getCurrentUser } from "@/lib/auth";
 import { getComprehensionByDeck } from "@/lib/comprehension";
 import { pool } from "@/lib/db";
+import { getOnboarding } from "@/lib/onboarding";
 import DeckList from "./DeckList";
+import Onboarding from "./Onboarding";
 import Landing from "./landing/Landing";
 
 // リクエストのたびに DB から読み直す
@@ -34,6 +36,9 @@ export default async function Home({ searchParams }) {
     [user.id]
   );
 
+  // 新しく登録した人への案内（4つとも終わるか、閉じたら出さない）
+  const onboarding = await getOnboarding(user.id);
+
   // 字幕のあるデッキは、動画の理解度も出す
   const comprehension = await getComprehensionByDeck(user.id);
   const decksWithProgress = decks.map((d) => {
@@ -48,6 +53,7 @@ export default async function Home({ searchParams }) {
           {NOTICES[notice]}
         </p>
       )}
+      {onboarding.show && <Onboarding onboarding={onboarding} />}
       <div className="page-head">
         <h1>デッキ</h1>
         <div className="actions-row">
