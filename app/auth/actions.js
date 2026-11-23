@@ -11,6 +11,7 @@ import {
   sendVerifyMail,
   sentRecently,
 } from "@/lib/accounts";
+import { isAllowedEmail } from "@/lib/allowlist";
 import { createSession, destroyOtherSessions, destroySession, requireUser } from "@/lib/auth";
 import { pool } from "@/lib/db";
 import { burnPasswordCheck, checkPasswordRule, hashPassword, verifyPassword } from "@/lib/password";
@@ -30,7 +31,8 @@ export async function login(prevState, formData) {
   const keep = { email: String(formData.get("email") ?? "").trim() };
   if (!email || !password) return { ...keep, error: "メールアドレスとパスワードを入力してください" };
 
-  const user = await findUserByEmail(email);
+  // 使える人を決めているときは、ほかの人は登録済みでも「違います」と同じ扱いにする
+  const user = isAllowedEmail(email) ? await findUserByEmail(email) : null;
   const ok = user ? await verifyPassword(password, user.password_hash) : await burnPasswordCheck(password);
   if (!ok) return { ...keep, error: "メールアドレスかパスワードが違います" };
   if (!user.verified_at) {
@@ -56,6 +58,7 @@ export async function signup(prevState, formData) {
   const rule = checkPasswordRule(password);
   if (rule) return { ...keep, error: rule };
   if (password !== String(formData.get("password2") ?? "")) return { ...keep, error: "確認用のパスワードが一致しません" };
+  if (!isAllowedEmail(email)) return { ...keep, error: "このアプリは、決まった人だけが使えます。このメールアドレスでは登録できません" };
 
   const existing = await findUserByEmail(email);
   let sent = true;
@@ -82,7 +85,7 @@ export async function signup(prevState, formData) {
 export async function resendVerify(prevState, formData) {
   const email = normalizeEmail(formData.get("email"));
   if (!email) return { error: "メールアドレスを正しく入力してください", email: String(formData.get("email") ?? "") };
-  const user = await findUserByEmail(email);
+  const user = isAllowedEmail(email) ? await findUserByEmail(email) : null;
   if (user && !user.verified_at && !(await sentRecently(user.id, "verify"))) {
     if (!(await sendVerifyMail(user))) return { error: MAIL_ERROR, email };
   }
@@ -93,7 +96,7 @@ export async function resendVerify(prevState, formData) {
 export async function requestReset(prevState, formData) {
   const email = normalizeEmail(formData.get("email"));
   if (!email) return { error: "メールアドレスを正しく入力してください", email: String(formData.get("email") ?? "") };
-  const user = await findUserByEmail(email);
+  const user = isAllowedEmail(email) ? await findUserByEmail(email) : null;
   if (user && !(await sentRecently(user.id, "reset"))) {
     if (!(await sendResetMail(user))) return { error: MAIL_ERROR, email };
   }

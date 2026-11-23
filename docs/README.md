@@ -6,6 +6,7 @@
 | 文書 | 内容 |
 | --- | --- |
 | [setup.md](setup.md) | セットアップの説明書（Windows・Mac・Linux） |
+| [deploy.md](deploy.md) | インターネットに公開する手順（Vercel ＋ Neon、無料） |
 | [architecture.md](architecture.md) | 全体の構成、ディレクトリ、処理の流れ、外部とのつながり |
 | [data-model.md](data-model.md) | テーブル同士の関係（図）、マイグレーションの履歴 |
 | [tables.md](tables.md) | テーブル定義書（全テーブルの全列、キー、インデックス） |

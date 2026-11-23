@@ -16,6 +16,10 @@ import ExplainPanel from "./ExplainPanel";
 import StoryReader from "./StoryReader";
 import StoryScenes from "./StoryScenes";
 
+// この画面の操作（サーバーアクション）が動ける長さ（秒）。絵を自動で作るとき、画像生成サービスを最大90秒待つので、
+// それより長くする（Vercel の無料プランの上限は300秒）
+export const maxDuration = 120;
+
 // リクエストのたびに DB から読み直す
 export const dynamic = "force-dynamic";
 

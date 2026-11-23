@@ -42,6 +42,14 @@ flowchart LR
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS` | メールの送信先 | Mailpit |
 | `MAIL_FROM` | 差出人 | `フラッシュカード <no-reply@flashcard.local>` |
 
+## インターネットに公開するとき（Vercel ＋ Neon）
+
+Docker の代わりに、アプリは Vercel、DB は Neon（どちらも無料の枠）で動かせる。手順は [deploy.md](deploy.md)。
+
+- Vercel のビルドは `package.json` の `vercel-build`（先に `scripts/migrate.mjs` で DB のマイグレーションを当ててから `next build`）
+- 実行中に `fs` で読む `data/` の語のリストは、`next.config.mjs` の `outputFileTracingIncludes` で公開するファイルに含める
+- デッキの画面は `maxDuration = 120`（秒）。絵の自動生成で、画像生成サービスを最大90秒待つため
+
 ## ディレクトリ
 
 ```
@@ -112,6 +120,7 @@ sequenceDiagram
 | --- | --- | --- |
 | `db.js` | 接続プール（ホットリロードで増えないよう globalThis に1つ） | ○ |
 | `auth.js` | セッション、`getCurrentUser` / `requireUser`、持ち主の確認 | ○ |
+| `allowlist.js` | 使える人をメールアドレスで決める（環境変数 `ALLOWED_EMAILS`。空ならだれでも） | |
 | `accounts.js` | メールのリンク（確認・再設定）、登録の完了、メールの文面 | ○ |
 | `password.js` | パスワードのハッシュ（scrypt） | |
 | `mail.js` | メール送信（nodemailer）、`appUrl` | |

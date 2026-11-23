@@ -4,7 +4,7 @@
 
 ## はじめて使うとき（セットアップ）
 
-Docker Desktop を入れて起動したうえで、次を実行します（詳しくは [docs/setup.md](docs/setup.md)）。
+Docker Desktop を入れて起動したうえで、次を実行します（詳しくは [docs/setup.md](docs/setup.md)。インターネットに無料で公開するときは [docs/deploy.md](docs/deploy.md)）。
 
 | Windows | Mac / Linux |
 | --- | --- |
@@ -170,5 +170,6 @@ API は使わず、claude.ai などのチャット AI にプロンプトを貼�
 
 ## ライセンス
 
-- コードは [MIT ライセンス](LICENSE) です。
+- コードは非公開です。持ち主の許可なく、コピー・改変・配布・利用はできません（[LICENSE](LICENSE)）。
+  以前 MIT ライセンスで公開していた版は、MIT のままです。
 - `data/en-words.txt` だけは MIT ではなく、CC BY-SA 4.0 です（出典は `data/README.md`）。

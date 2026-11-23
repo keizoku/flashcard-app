@@ -1,0 +1,66 @@
+# インターネットに公開する（Vercel ＋ Neon、無料）
+
+手元の Docker ではなく、インターネット上で動かして、外出先やスマホからも使えるようにする手順です。
+
+- アプリ: [Vercel](https://vercel.com/)（無料の Hobby プラン）
+- DB: [Neon](https://neon.com/)（無料の PostgreSQL）
+- メール: Gmail など、すでに使える SMTP（[.env.example](../.env.example) と同じ設定）
+
+アカウントの作成、パスワード・キーの入力は、自分で行ってください（ここに書くのは手順だけです）。
+
+## 無料の枠（2026年11月に確かめた内容。変わることがあるので、始める前に各サイトで確かめる）
+
+| | 無料の枠 | このアプリで気をつけること |
+| --- | --- | --- |
+| Vercel Hobby | 個人の非商用の利用だけ（お金をいただくサービスにするときは、有料の Pro プランが要る）。非公開のリポジトリでも使える。1回の処理は最大300秒 | 絵を自動で作る処理は最大90秒待つので、デッキの画面は `maxDuration = 120`（秒）にしてある |
+| Neon Free | 1プロジェクトに 1GB の保存容量、月 100 CU 時間の計算。超えると月末まで止まる（料金はかからない） | 場面の絵は DB に入るので、容量を多く使う（1枚 数百KB）。しばらく使わないと DB が眠り、最初の表示が数秒遅れる |
+
+## 1. Neon で DB を作る
+
+1. Neon にサインアップして、プロジェクトを作る。リージョンは日本に近いところ（例: AWS Asia Pacific (Singapore) か Tokyo があればそれ）を選ぶ
+2. 「Connect」で、接続の文字列（`postgresql://…?sslmode=require`）をコピーする。
+   **「Connection pooling」を有効にした文字列（ホスト名に `-pooler` が付く）を使う**（Vercel はアクセスのたびに接続するので、接続が増えすぎないように）
+
+## 2. （使っているデータを移すとき）手元の DB を Neon に写す
+
+新しく始めるなら、この手順はいらない。写すなら、**Vercel に初めて公開する前に**、空の Neon の DB に写す
+（先に公開すると、Vercel のビルドが空のテーブルを作ってしまい、写すときにぶつかる）。
+
+```bash
+docker compose exec -T db pg_dump -U flashcard --no-owner --no-acl flashcard > flashcard-dump.sql
+```
+
+```bash
+docker run --rm -i postgres:17 psql "ここに Neon の接続の文字列" < flashcard-dump.sql
+```
+
+- `flashcard-dump.sql` には学習データとパスワードのハッシュが入っているので、写したら消す。Git には入れない
+- 手元のデータはそのまま残る。写したあとは、手元と Neon のデータは別々に増えていく
+
+## 3. Vercel に公開する
+
+1. Vercel に GitHub のアカウントでサインアップし、「Add New → Project」で `flashcard-app` のリポジトリを選ぶ。
+   リポジトリは非公開なので、Vercel にこのリポジトリを読む許可を与える（GitHub の画面で、許可するリポジトリを `flashcard-app` だけにする）
+2. Framework は Next.js（自動で選ばれる）。ビルドのコマンドは変えない（`package.json` の `vercel-build` が使われ、**先に DB のマイグレーションを当ててから**ビルドする）
+3. 「Environment Variables」に入れる:
+
+| 名前 | 値 |
+| --- | --- |
+| `DATABASE_URL` | Neon の接続の文字列（`-pooler` の付いたもの） |
+| `APP_URL` | 公開した URL（例: `https://flashcard-app-xxxx.vercel.app`）。メールのリンクと、ログインの Cookie を HTTPS だけにするのに使う |
+| `ALLOWED_EMAILS` | **自分のメールアドレス**（まず自分だけで使うとき）。カンマ区切りで何人か入れられる。ほかの人は登録もログインもできない（[auth.md](auth.md)）。空にすると、だれでも登録できる |
+| `SMTP_HOST` `SMTP_PORT` `SMTP_SECURE` `SMTP_USER` `SMTP_PASS` `MAIL_FROM` | メールを送る設定（[.env.example](../.env.example) の例と同じ）。ないと登録の確認メールが送れない |
+
+4. 「Deploy」を押す。初めは URL がわからないので、公開されたら `APP_URL` にその URL を入れて、「Redeploy」する
+5. 「Settings → Functions → Function Region」を、Neon と同じか近いリージョン（例: Tokyo `hnd1`）にする。離れていると、画面の表示が遅くなる
+
+これで、`main` にプッシュするたびに自動で公開し直される。
+
+## 公開したあとに気をつけること
+
+- **`ALLOWED_EMAILS` を入れないと、だれでもユーザー登録できる。** URL を知っている人は登録して使える（データは人ごとに分かれている。[auth.md](auth.md)）。
+  人を増やすときは、`ALLOWED_EMAILS` にアドレスを足して「Redeploy」する
+- **ブランチをプッシュしたときのプレビューも、同じ DB を使う。** プレビューのビルドでもマイグレーションが当たるので、テーブルを変えるブランチは注意する
+- 開発用の受信箱（Mailpit）はないので、メールは本物の SMTP で送る
+- 絵の自動生成（Pollinations）・動画の題名の取得（YouTube）は、Vercel のサーバーから外のサービスにつなぐ。サービスの都合で断られることがある
+- 手元の Docker の環境は今までどおり使える（`DATABASE_URL` は手元の DB のまま）

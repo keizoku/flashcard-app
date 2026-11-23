@@ -5,6 +5,9 @@ node_modules/
 
 .env
 
+# 手元の DB を Neon に写すときの書き出し（学習データが入っている。docs/deploy.md）
+flashcard-dump.sql
+
 # テスト結果レポート（docker compose run --rm e2e で作る）と、画面のテストの作業用ファイル
 reports/
 test-results/
