@@ -128,11 +128,12 @@ docker compose run --rm e2e
 | テーブル定義書と DB が同じか（[tables](tables.md)） | `db/schema-doc.test.js` |
 | テスト仕様書とテストの ID が同じか（[test-spec](test-spec.md)） | `unit/test-spec.test.js` |
 | 画面の文言に「デッキ」を使わない（「単語帳」と呼ぶ） | `unit/wording.test.js` |
+| 左右のスワイプを ← / → に置きかえる（iPhone・iPad） | `unit/swipe.test.js` |
 | 画面の SQL（他人の単語帳は 404、トップ・統計のデータの分離、学習の順） | `db/pages.test.js` |
 | テスト実行ツールの仕様書の読み取り・結果のまとめ | `unit/test-runner.test.js` |
 | テスト結果レポートの結果のまとめ・HTML | `unit/report.test.js` |
 | 単語帳の共有（表示名・公開・みんなの単語帳・取り込み、[features 10](features.md#10-単語帳の共有libsharingjsappshared)） | `db/sharing.test.js` |
-| 画面の操作（ログイン・ヘッダー・他人の単語帳・学習のキーボード・取り込み・統計・トップ・単語帳の共有・ホームページ） | `../e2e/app.spec.mjs`（画面のテスト） |
+| 画面の操作（ログイン・ヘッダー・他人の単語帳・学習のキーボードとスワイプ・取り込み・統計・トップ・単語帳の共有・ホームページ） | `../e2e/app.spec.mjs`（画面のテスト） |
 | セッション・持ち主の確認 | `db/session.test.js` |
 | メールのリンク・登録の完了・以前のデータの引き継ぎ | `db/accounts.test.js` |
 | 登録・ログイン・ログアウト・再送・再設定・パスワードの変更 | `db/auth-actions.test.js` |

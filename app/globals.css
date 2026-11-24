@@ -998,3 +998,10 @@ kbd {
 .guide-box .guide-title { margin: 0 0 6px; font-weight: 600; }
 .guide-box ol { margin: 0; padding-left: 1.4em; display: grid; gap: 4px; }
 .add-form .next-step { margin: 4px 0 0; }
+
+/* タッチの端末（iPhone・iPad）だけに出す案内 / タッチの端末では出さない案内（キーの説明など） */
+.touch-only { display: none; }
+@media (hover: none) and (pointer: coarse) {
+  .touch-only { display: block; }
+  .no-touch { display: none; }
+}

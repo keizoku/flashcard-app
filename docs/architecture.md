@@ -143,12 +143,13 @@ sequenceDiagram
 | `sceneUtils.js` | 場面の分け方、絵の指示文、自動で作る URL、画像の種類の見分け。画面の部品からも使う | |
 | `studyTime.js` | 勉強時間の記録・手で足す・消す・集計 | ○ |
 | `studyClock.js` | 勉強時間の時計（操作・再生のあった間だけ数える）、時間の書き方。画面の部品から使う | |
+| `swipe.js` | 左右のスワイプを ← / → キーに置きかえる計算（iPhone・iPad 用）。画面の部品から使う | |
 | `tagCandidates.js` | 単語帳の一覧で、さらに絞り込めるタグの候補（件数の多い順、同じ件数なら文字コード順）。画面の部品から使う | |
 | `story.js` / `storyPrompt.js` | 物語のプロンプト、答えから単語帳を作る | ○ |
 | `youtube.js` / `videoTitle.js` / `format.js` / `levels.js` | 小さな道具 | |
 
 `import "server-only"` が付いたファイルは、ブラウザ側に入らない（Next.js がビルド時に止める）。
-`youtube.js` / `format.js` / `levels.js` / `review.js` / `tagCandidates.js` / `studyClock.js` / `sceneUtils.js` / `uiPrefs.js` は画面の部品からも使う。
+`youtube.js` / `format.js` / `levels.js` / `review.js` / `tagCandidates.js` / `studyClock.js` / `swipe.js` / `sceneUtils.js` / `uiPrefs.js` は画面の部品からも使う。
 
 ## 外部とのつながり
 

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { HighlightedMany, HighlightedParts } from "@/app/components/Highlighted";
 import { speak, stopSpeaking } from "@/app/components/speech";
 import { useStudyClock } from "@/app/components/studyTimer";
+import { useSwipeKeys } from "@/app/components/useSwipeKeys";
 import { sceneForSentence } from "@/lib/sceneUtils";
 
 // 物語のスライド。1枚目は題名と使った単語、そのあと1文ずつ大きく出す。
@@ -11,6 +12,7 @@ import { sceneForSentence } from "@/lib/sceneUtils";
 // 自動再生: 今の文を読み上げ、読み終わったら少しあけて次の文へ。最後の文を読み終わったら止まる。
 // 自動再生している間を、このデッキのリスニングの時間として記録する。
 // キーボード: ← → で前後、スペースで自動再生 / 止める、↑ で今の文を読み上げ、Esc で閉じる
+// iPhone・iPad では、左右のスワイプで前後へ（本のページと同じ向き: 指を左へ → 次の文）
 const GAP_MS = 1200; // 文と文の間
 
 export default function StorySlides({ deckId, title, sentences, scenes = [], onClose }) {
@@ -80,6 +82,7 @@ export default function StorySlides({ deckId, title, sentences, scenes = [], onC
     };
   }, []);
 
+  useSwipeKeys({ pageTurn: true });
   useEffect(() => {
     function onKey(e) {
       if (e.target instanceof HTMLElement && e.target.closest("input, select, textarea")) return;
@@ -170,7 +173,8 @@ export default function StorySlides({ deckId, title, sentences, scenes = [], onC
                 ))}
               </p>
             )}
-            <p className="note small">→ で次へ。スペースで自動再生（読み上げながら進む）。</p>
+            <p className="note small no-touch">→ で次へ。スペースで自動再生（読み上げながら進む）。</p>
+            <p className="note small touch-only">左へスワイプで次へ。「▶ 自動再生」で読み上げながら進む。</p>
           </>
         )}
       </div>

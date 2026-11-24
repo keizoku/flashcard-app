@@ -6,6 +6,7 @@ import CardDetails from "@/app/components/CardDetails";
 import SpeakButton from "@/app/components/SpeakButton";
 import { getSpeechSettings, speak, stopSpeaking, useSpeechSettings } from "@/app/components/speech";
 import { useVocabTimer } from "@/app/components/studyTimer";
+import { useSwipeKeys } from "@/app/components/useSwipeKeys";
 import VideoPlayer from "@/app/components/VideoPlayer";
 import { HighlightedMany } from "@/app/components/Highlighted";
 import { displayTarget } from "@/lib/format";
@@ -90,6 +91,8 @@ export default function StudySession({ deckId, cards, studyAll }) {
   //   表の面   … → で答えを見る（スペース/Enter でも可）、← で前のカードに戻る
   //   答えの面 … ← または 1 で覚えていない、→ または 2 で覚えている
   //   どちらでも … ↑ で読み上げ、Shift+↑ でゆっくり読み上げ
+  // iPhone・iPad では、左右のスワイプが ← / → の代わり（指を右へ → →。キーと同じ向き）
+  useSwipeKeys();
   useEffect(() => {
     function onKey(e) {
       if (e.target instanceof HTMLElement && e.target.closest("input, textarea")) return;
@@ -228,6 +231,9 @@ export default function StudySession({ deckId, cards, studyAll }) {
           </button>
         </div>
       )}
+      <p className="note small touch-only">
+        {revealed ? "右へスワイプで「覚えている」、左へで「覚えていない」" : "右へスワイプで答えを見る、左へで前のカードに戻る"}
+      </p>
       {error && <p className="error" role="alert">{error}</p>}
     </div>
   );
