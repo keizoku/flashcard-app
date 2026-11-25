@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/app/auth/AuthForms";
+import { PasskeyLoginButton } from "@/app/auth/PasskeyButtons";
 import { isSignupOpen } from "@/lib/allowlist";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -13,6 +14,7 @@ export default async function LoginPage({ searchParams }) {
     <main className="auth-page">
       <h1>ログイン</h1>
       <LoginForm next={typeof next === "string" ? next : ""} />
+      <PasskeyLoginButton next={typeof next === "string" ? next : ""} />
       <ul className="auth-links">
         {isSignupOpen() && (
           <li>

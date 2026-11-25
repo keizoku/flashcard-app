@@ -47,7 +47,7 @@ docker run --rm -i postgres:17 psql "ここに Neon の接続の文字列" < fla
 | 名前 | 値 |
 | --- | --- |
 | `DATABASE_URL` | Neon の接続の文字列（`-pooler` の付いたもの） |
-| `APP_URL` | 公開した URL（例: `https://flashcard-app-xxxx.vercel.app`）。メールのリンクと、ログインの Cookie を HTTPS だけにするのに使う |
+| `APP_URL` | 公開した URL（例: `https://flashcard-app-xxxx.vercel.app`）。メールのリンクと、ログインの Cookie を HTTPS だけにするのに使う。パスキーもこのドメインに結びつく（URL を変えると、登録したパスキーは使えなくなる） |
 | `ALLOWED_EMAILS` | **自分のメールアドレス**（まず自分だけで使うとき）。カンマ区切りで何人か入れられる。ほかの人は登録もログインもできない（[auth.md](auth.md)）。空にすると、だれでも登録できる |
 | `SMTP_HOST` `SMTP_PORT` `SMTP_SECURE` `SMTP_USER` `SMTP_PASS` `MAIL_FROM` | メールを送る設定（[.env.example](../.env.example) の例と同じ）。ないと登録の確認メールが送れない |
 

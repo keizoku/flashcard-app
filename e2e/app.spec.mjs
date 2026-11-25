@@ -36,7 +36,7 @@ test("UI-01 ログインしていないと、ログイン画面へ。ログイ�
   await page.getByLabel("メールアドレス").fill("me@example.com");
   await page.locator('input[name="password"]').fill(PASSWORD);
   await shot(page, testInfo, "2. メールアドレスとパスワードを入れた");
-  await page.getByRole("button", { name: "ログイン" }).click();
+  await page.getByRole("button", { name: "ログイン", exact: true }).click();
 
   await expect(page).toHaveURL(/\/stats$/);
   await expect(page.getByRole("heading", { name: "統計" })).toBeVisible();
@@ -812,4 +812,52 @@ test("UI-24 パソコン（マウス）では、スワイプの案内を出さ�
   // パソコンでは、カードを画面いっぱいには広げない
   expect((await page.locator(".study-card").boundingBox()).height).toBeLessThan(400);
   await shot(page, testInfo, "1. パソコンでは、スワイプの案内は出ない");
+});
+
+test("UI-25 パスキー: アカウントの画面で登録し、ログアウトしたあと「パスキーでログイン」で入れる。削除すると、そのパスキーでは入れない", async ({ page, context }, testInfo) => {
+  // Chromium の、偽物のパスキーの端末（指紋・顔の確認は自動で通る）
+  const cdp = await context.newCDPSession(page);
+  await cdp.send("WebAuthn.enable");
+  await cdp.send("WebAuthn.addVirtualAuthenticator", {
+    options: {
+      protocol: "ctap2",
+      transport: "internal",
+      hasResidentKey: true,
+      hasUserVerification: true,
+      isUserVerified: true,
+      automaticPresenceSimulation: true,
+    },
+  });
+  await loginAs(context, me);
+
+  await page.goto("/account");
+  await expect(page.getByText("まだ登録していません。")).toBeVisible();
+  await shot(page, testInfo, "1. アカウントの画面に「パスキー」の欄がある");
+  await page.getByLabel(/名前（任意/).fill("Mac");
+  await page.getByRole("button", { name: "この端末にパスキーを登録" }).click();
+  await expect(page.getByText("パスキーを登録しました")).toBeVisible();
+  await expect(page.locator(".passkey-list li")).toHaveCount(1);
+  await expect(page.locator(".passkey-list")).toContainText("Mac");
+  await shot(page, testInfo, "2. 登録すると、一覧に出る");
+
+  await page.locator("header").getByRole("button", { name: "ログアウト" }).click();
+  await expect(page).toHaveURL(/\/login/);
+  await page.goto("/login?next=%2Fstats");
+  await shot(page, testInfo, "3. ログインの画面に「パスキーでログイン」がある");
+  await page.getByRole("button", { name: "パスキーでログイン" }).click();
+  await expect(page).toHaveURL(/\/stats$/);
+  await expect(page.locator("header").getByRole("button", { name: "ログアウト" })).toBeVisible();
+  await shot(page, testInfo, "4. パスワードを入れずに、パスキーでログインできた（元の画面に戻る）");
+  const { rows } = await db().query("SELECT last_used_at FROM passkeys WHERE user_id = $1", [me.id]);
+  expect(rows[0].last_used_at).not.toBeNull();
+
+  await page.goto("/account");
+  page.once("dialog", (d) => d.accept());
+  await page.locator(".passkey-list").getByRole("button", { name: "削除" }).click();
+  await expect(page.getByText("まだ登録していません。")).toBeVisible();
+  await page.locator("header").getByRole("button", { name: "ログアウト" }).click();
+  await page.getByRole("button", { name: "パスキーでログイン" }).click();
+  await expect(page.locator(".passkey-login").getByRole("alert")).toContainText(/ログインできませんでした|キャンセル/);
+  await expect(page).toHaveURL(/\/login/);
+  await shot(page, testInfo, "5. 削除したパスキーでは、ログインできない");
 });

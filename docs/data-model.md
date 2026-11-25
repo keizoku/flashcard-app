@@ -9,6 +9,8 @@ PostgreSQL 17。テーブル同士の関係とマイグレーションの履歴�
 erDiagram
   users ||--o{ user_sessions : "ログイン中"
   users ||--o{ email_tokens : "メールのリンク"
+  users ||--o{ passkeys : "パスキー"
+  users |o--o{ passkey_challenges : "登録の合言葉"
   users ||--o{ decks : "持つ"
   users ||--o| settings : "レベル設定"
   users ||--o{ known_words : "知ってる"
@@ -62,6 +64,7 @@ erDiagram
 | 018_story_scenes.sql | 物語の場面と、場面の絵（story_scenes） |
 | 019_onboarding.sql | 「はじめの4ステップ」を閉じた日時（users.onboarding_dismissed_at） |
 | 020_drop_videos.sql | 「動画を探す」（おすすめの動画）をなくしたので、videos を消す |
+| 021_passkeys.sql | パスキー（passkeys）と、登録・ログインの合言葉（passkey_challenges） |
 
 決まり:
 - 当てたファイルは書き換えない。直すときは次の番号のファイルを足す

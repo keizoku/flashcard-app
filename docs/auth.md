@@ -29,6 +29,9 @@ sequenceDiagram
 | 再設定の申し込み `requestReset` | 登録済みのアドレスにリンク（1時間有効）を送る |
 | 再設定 `resetPassword` | 新しいパスワードにし、ほかの端末のセッションをすべて消してログイン。未確認なら完了にする |
 | パスワードの変更 `changePassword` | 今のパスワードを確かめて変更し、この端末以外のセッションを消す |
+| パスキーの登録 `startPasskeyRegistration` → `completePasskeyRegistration` | アカウントの画面で。ログイン中の人が、この端末にパスキーを作る（名前は任意、30文字まで） |
+| パスキーでログイン `startPasskeyLogin` → `completePasskeyLogin` | ログインの画面の「パスキーでログイン」。メールアドレスは入れず、端末がパスキーを選ぶ。正しければセッションを作り、`next` の画面へ |
+| パスキーの削除 `removePasskey` | アカウントの画面で。自分のパスキーだけ |
 
 ## 決まり（セキュリティ）
 
@@ -74,6 +77,39 @@ sequenceDiagram
   勉強時間を消し、「はじめの4ステップ」を閉じた印も消す。アカウント・パスワード・ログインは残す。1つの SQL で行う（途中で失敗したら何も消えない）。
   消す前に、同じメールアドレスをもう一度入れてもらう
 
+## パスキー（`lib/passkeys.js`、`app/auth/passkeyActions.js`、`app/auth/PasskeyButtons.js`）
+
+パスワードの代わりに、端末の指紋・顔・PIN でログインする（WebAuthn。ライブラリは `@simplewebauthn/server` と `@simplewebauthn/browser`）。
+パスワードのログインも、今までどおり使える。
+
+```mermaid
+sequenceDiagram
+  actor U as ユーザー
+  participant B as ブラウザ・端末
+  participant A as アプリ
+  U->>B: 「パスキーでログイン」
+  B->>A: startPasskeyLogin
+  A->>A: 合言葉（challenge）を passkey_challenges に保存（5分・1回だけ）
+  A-->>B: options ＋ Cookie flashcard_passkey（合言葉の場所）
+  B->>U: 指紋・顔・PIN の確認
+  B->>A: completePasskeyLogin（端末が合言葉に署名した答え）
+  A->>A: 合言葉を取り出して消す → 公開鍵で署名を確かめる → 回数を更新
+  A-->>B: セッションを作って next の画面へ
+```
+
+- 鍵は端末の中で作られ、**公開鍵だけ** を `passkeys` に保存する。DB が漏れても、そこからログインはできない
+- パスキーはこのアプリのドメイン（`APP_URL` のホスト名。手元では `localhost`）に結びつく。ほかのサイトでは使えず、ほかのサイトの答えも受け付けない。
+  **公開する URL（ドメイン）を変えると、それまでのパスキーは使えなくなる**（もう一度登録してもらう）
+- 合言葉は DB に保存し、Cookie にはその場所を示すランダムな値だけを入れる（DB には sha256。httpOnly、SameSite=Strict、5分）。
+  取り出したら、成功しても失敗しても消す（同じ答えの使い回しを防ぐ）。登録用とログイン用は分け、登録用は始めた人にしか使えない
+- 端末が数える使用回数が前より戻ったら、鍵の複製を疑ってログインさせない（0 のままの端末は数えない）
+- 登録が完了していない人・使える人（`ALLOWED_EMAILS`）でなくなった人は、パスキーがあってもログインできない
+- ログインの失敗は、どの理由でも「パスキーでログインできませんでした」（登録の有無を推測させない）
+- 端末に渡す利用者の ID は、ユーザーの番号から作ったハッシュ（番号そのものは見せない。同じ人なら同じ値なので、同じ端末に登録し直すと上書きになる）
+- 端末は、本人確認（指紋・顔・PIN）を「できればする」（`userVerification: preferred`）。
+  登録は「端末に保存するパスキー」だけ（`residentKey: required`。メールアドレスを入れずにログインできる）
+- ユーザーを消すとパスキーも消える。パスワードを変えても、パスキーは残る
+
 ## データの分離
 
 - すべての画面と Server Action は、最初に `requireUser()` を呼ぶ（`middleware.js` は Cookie の有無しか見ないため）。
@@ -83,6 +119,7 @@ sequenceDiagram
   - カード: `ownsCard(userId, cardId)`、または単語帳と JOIN して `d.user_id = $user`
   - 学習の記録: 単語帳と JOIN（`recordReview` / `undoReview` は `FOR UPDATE OF c` / `OF l` でロック）
   - 設定・「知ってる」の語: `user_id`
+  - パスキー: `user_id`（一覧・削除。ログインのときは、端末が示したパスキーの持ち主になる）
 - 他人の単語帳・カードの ID を指定されたら、「見つかりません」と同じ扱いにする（存在するかどうかも教えない）
 
 ## ユーザー管理より前のデータ

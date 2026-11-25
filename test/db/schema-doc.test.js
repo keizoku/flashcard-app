@@ -34,7 +34,7 @@ function readDoc() {
 
 async function readDb() {
   const { rows } = await pool.query(
-    `SELECT table_name, column_name, data_type, is_nullable = 'YES' AS nullable
+    `SELECT table_name, column_name, data_type, udt_name, is_nullable = 'YES' AS nullable
      FROM information_schema.columns WHERE table_schema = 'public'
      ORDER BY table_name, ordinal_position`
   );
@@ -42,7 +42,8 @@ async function readDb() {
   for (const r of rows) {
     (tables[r.table_name] ??= []).push({
       name: r.column_name,
-      type: TYPE_NAMES[r.data_type] ?? r.data_type,
+      // 配列は「text[]」のように書く（DB は ARRAY とだけ返すので、中の型 _text から作る）
+      type: r.data_type === "ARRAY" ? `${r.udt_name.replace(/^_/, "")}[]` : TYPE_NAMES[r.data_type] ?? r.data_type,
       nullable: r.nullable,
     });
   }

@@ -14,6 +14,8 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 | [users](#users) | ユーザー | 013（014・019 で列を追加） |
 | [user_sessions](#user_sessions) | ログイン中のセッション | 013 |
 | [email_tokens](#email_tokens) | メールのリンクの合言葉 | 013 |
+| [passkeys](#passkeys) | パスキー（端末の公開鍵） | 021 |
+| [passkey_challenges](#passkey_challenges) | パスキーの登録・ログインの合言葉 | 021 |
 | [decks](#decks) | 単語帳 | 001 |
 | [cards](#cards) | カード | 001 |
 | [card_targets](#card_targets) | カードの覚えたい語 | 011 |
@@ -76,6 +78,41 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 - 外部キー: `user_id` → `users.id`（ユーザーを消すと消える）
 - チェック: `purpose` は `verify` か `reset`
 - インデックス: `email_tokens_user_id_idx`（`user_id, purpose`）
+
+## passkeys
+
+パスキー（端末の指紋・顔・PIN でログインする。[auth.md](auth.md#パスキーlibpasskeysjsappauthpasskeyactionsjsappauthpasskeybuttonsjs)）。公開鍵だけを保存する。
+
+| 列 | 型 | NULL | 初期値 | 説明 |
+| --- | --- | --- | --- | --- |
+| id | text | | | 端末が決めた ID（credential ID、base64url） |
+| user_id | integer | | | 持ち主 |
+| public_key | bytea | | | 公開鍵（COSE の形） |
+| counter | bigint | | 0 | 端末が数える使用回数。前より戻ったらログインさせない（0 のままの端末もある） |
+| transports | text[] | | '{}' | 端末とのつなぎ方（internal・hybrid など）。登録の options で使う |
+| name | text | | | 利用者が付けた名前。30文字まで、空なら「パスキー」 |
+| created_at | timestamptz | | now() | 登録した日時 |
+| last_used_at | timestamptz | ○ | | 最後にログインに使った日時 |
+
+- 主キー: `id`
+- 外部キー: `user_id` → `users.id`（ユーザーを消すと消える）
+- インデックス: `passkeys_user_idx`（`user_id`）
+
+## passkey_challenges
+
+パスキーの登録・ログインのときに出した合言葉（challenge）。5分まで、1回だけ使える。
+
+| 列 | 型 | NULL | 初期値 | 説明 |
+| --- | --- | --- | --- | --- |
+| token_hash | text | | | Cookie `flashcard_passkey` の値の sha256 |
+| challenge | text | | | 端末が署名する合言葉 |
+| purpose | text | | | `register`（登録）/ `login`（ログイン） |
+| user_id | integer | ○ | | 登録を始めた人（ログインのときは NULL） |
+| expires_at | timestamptz | | | 有効期限（作ってから5分）。期限切れは、次に合言葉を作るときに消す |
+
+- 主キー: `token_hash`
+- 外部キー: `user_id` → `users.id`（ユーザーを消すと消える）
+- チェック: `purpose IN ('register', 'login')`
 
 ## decks
 

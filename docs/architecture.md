@@ -128,6 +128,7 @@ sequenceDiagram
 | `accounts.js` | メールのリンク（確認・再設定）、登録の完了、メールの文面 | ○ |
 | `password.js` | パスワードのハッシュ（scrypt） | |
 | `mail.js` | メール送信（nodemailer）、`appUrl` | |
+| `passkeys.js` | パスキーの登録・ログイン・一覧・削除（`@simplewebauthn/server`） | ○ |
 | `transcript.js` | 字幕を区間・文に分け、知らない語を数えて段階に分ける | |
 | `vocab.js` | 単語の原形と頻出順位（`data/en-words.txt`、wink-lemmatizer） | |
 | `idioms.js` | イディオムの照合（`data/idioms.tsv`） | |
