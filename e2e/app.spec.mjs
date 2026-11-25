@@ -6,11 +6,14 @@ import { closeDb, createCard, createDeck, createUser, db, loginAs, PASSWORD, res
 // 実行: docker compose run --rm e2e（詳しくは docs/testing.md）
 
 // 手順のスクリーンショットを撮って、テスト結果に添付する
+// iPhone の大きさ（タッチ）のテストでは、画面に見えている所だけを撮る
+// （ページ全体を撮ると、撮る間だけ画面の高さが変わり、タッチの端末向けの見た目がくずれるため）
 async function shot(page, testInfo, step) {
   await page.waitForLoadState("networkidle").catch(() => {});
   // 開発サーバーの印（Next.js の左下のボタン）は写さない
   await page.addStyleTag({ content: "nextjs-portal { display: none !important; }" }).catch(() => {});
-  await testInfo.attach(step, { body: await page.screenshot({ fullPage: true }), contentType: "image/png" });
+  const touch = await page.evaluate(() => matchMedia("(hover: none) and (pointer: coarse)").matches);
+  await testInfo.attach(step, { body: await page.screenshot({ fullPage: !touch }), contentType: "image/png" });
 }
 
 let me;
@@ -734,7 +737,7 @@ async function swipe(page, from, to, y = 400) {
 test.describe("iPhone の大きさ（タッチ）", () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
-  test("UI-23 キーボードのない端末: 学習画面はカードのタップで → （答えを見る・覚えている）、左へのスワイプで ← （前へ・覚えていない）。右へのスワイプではなにもしない。物語のスライドは本のページの向き（左へ = 次）。案内もタッチ用になる", async ({ page, context }, testInfo) => {
+  test("UI-23 キーボードのない端末: 学習画面は白いカードを画面の6割より高く広げ、カードのタップで → （答えを見る・覚えている）、左へのスワイプで ← （前へ・覚えていない）。右へのスワイプではなにもしない。物語のスライドは本のページの向き（左へ = 次）。案内もタッチ用になる", async ({ page, context }, testInfo) => {
     const deck = await createDeck(me.id, { name: "スワイプの単語帳" });
     await createCard(deck, { front: "I was skeptical at first.", back: "最初は疑っていた", word: "skeptical" });
     await loginAs(context, me);
@@ -750,7 +753,11 @@ test.describe("iPhone の大きさ（タッチ）", () => {
     await page.locator(".study-card .speak-row button").first().tap();
     await expect(page.getByText("最初は疑っていた")).toHaveCount(0);
 
-    await page.locator(".study-front").tap();
+    // 白いカードが画面の6割より高く広がっていて、カードの下のほう（文のない所）をタップしてもめくれる
+    const card = page.locator(".study-card");
+    const box = await card.boundingBox();
+    expect(box.height).toBeGreaterThanOrEqual(844 * 0.6);
+    await card.tap({ position: { x: box.width / 2, y: box.height - 30 } });
     await expect(page.getByText("最初は疑っていた")).toBeVisible();
     await expect(page.getByText("カードをタップで「覚えている」、左へスワイプで「覚えていない」")).toBeVisible();
     await shot(page, testInfo, "2. カードをタップすると、答えが出る（→ と同じ）");
@@ -795,12 +802,14 @@ test.describe("iPhone の大きさ（タッチ）", () => {
   });
 });
 
-test("UI-24 パソコン（マウス）では、スワイプの案内を出さない（キーの案内だけ）", async ({ page, context }, testInfo) => {
+test("UI-24 パソコン（マウス）では、スワイプの案内を出さない（キーの案内だけ）。カードも画面いっぱいには広げない", async ({ page, context }, testInfo) => {
   const deck = await createDeck(me.id, { name: "パソコンの単語帳" });
   await createCard(deck, { front: "I was skeptical at first.", word: "skeptical" });
   await loginAs(context, me);
   await page.goto(`/decks/${deck}/study`);
   await expect(page.getByRole("button", { name: /答えを見る/ })).toBeVisible();
   await expect(page.getByText("カードをタップで答えを見る、左へスワイプで前のカードに戻る")).toBeHidden();
+  // パソコンでは、カードを画面いっぱいには広げない
+  expect((await page.locator(".study-card").boundingBox()).height).toBeLessThan(400);
   await shot(page, testInfo, "1. パソコンでは、スワイプの案内は出ない");
 });

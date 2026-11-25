@@ -1006,4 +1006,7 @@ kbd {
 @media (hover: none) and (pointer: coarse) {
   .touch-only { display: block; }
   .no-touch { display: none; }
+  /* タッチの端末では、カードのタップでめくる。指を置きやすいよう、白いカードを画面の高さの 62% まで広げる
+     （dvh は、ブラウザのアドレスバーを除いた画面の高さ。使えないブラウザでは vh） */
+  .study-card { min-height: 62vh; min-height: 62dvh; }
 }
