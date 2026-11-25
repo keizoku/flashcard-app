@@ -91,8 +91,9 @@ export default function StudySession({ deckId, cards, studyAll }) {
   //   表の面   … → で答えを見る（スペース/Enter でも可）、← で前のカードに戻る
   //   答えの面 … ← または 1 で覚えていない、→ または 2 で覚えている
   //   どちらでも … ↑ で読み上げ、Shift+↑ でゆっくり読み上げ
-  // iPhone・iPad では、左右のスワイプが ← / → の代わり（指を右へ → →。キーと同じ向き）
-  useSwipeKeys();
+  // iPhone・iPad では、カードのタップが → の代わり（答えを見る・覚えている）、
+  // 左へのスワイプが ← の代わり（前のカードへ・覚えていない）。右へのスワイプではなにもしない
+  useSwipeKeys({ keys: ["ArrowLeft"], tapKey: "ArrowRight", tapArea: ".study-card" });
   useEffect(() => {
     function onKey(e) {
       if (e.target instanceof HTMLElement && e.target.closest("input, textarea")) return;
@@ -232,7 +233,7 @@ export default function StudySession({ deckId, cards, studyAll }) {
         </div>
       )}
       <p className="note small touch-only">
-        {revealed ? "右へスワイプで「覚えている」、左へで「覚えていない」" : "右へスワイプで答えを見る、左へで前のカードに戻る"}
+        {revealed ? "カードをタップで「覚えている」、左へスワイプで「覚えていない」" : "カードをタップで答えを見る、左へスワイプで前のカードに戻る"}
       </p>
       {error && <p className="error" role="alert">{error}</p>}
     </div>

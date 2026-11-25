@@ -734,32 +734,40 @@ async function swipe(page, from, to, y = 400) {
 test.describe("iPhone の大きさ（タッチ）", () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
-  test("UI-23 キーボードのない端末: 学習画面は左右のスワイプで進む（右へ = →、左へ = ←）。物語のスライドは本のページの向き（左へ = 次）。案内もタッチ用になる", async ({ page, context }, testInfo) => {
+  test("UI-23 キーボードのない端末: 学習画面はカードのタップで → （答えを見る・覚えている）、左へのスワイプで ← （前へ・覚えていない）。右へのスワイプではなにもしない。物語のスライドは本のページの向き（左へ = 次）。案内もタッチ用になる", async ({ page, context }, testInfo) => {
     const deck = await createDeck(me.id, { name: "スワイプの単語帳" });
     await createCard(deck, { front: "I was skeptical at first.", back: "最初は疑っていた", word: "skeptical" });
     await loginAs(context, me);
 
     await page.goto(`/decks/${deck}/study`);
-    await expect(page.getByText("右へスワイプで答えを見る、左へで前のカードに戻る")).toBeVisible();
-    await shot(page, testInfo, "1. iPhone の大きさでは、スワイプの案内が出る");
+    await expect(page.getByText("カードをタップで答えを見る、左へスワイプで前のカードに戻る")).toBeVisible();
+    await shot(page, testInfo, "1. iPhone の大きさでは、タップとスワイプの案内が出る");
 
+    // 右へのスワイプでは、なにもしない
     await swipe(page, 100, 300);
+    await expect(page.getByText("最初は疑っていた")).toHaveCount(0);
+    // 読み上げのボタンをタップしても、めくらない
+    await page.locator(".study-card .speak-row button").first().tap();
+    await expect(page.getByText("最初は疑っていた")).toHaveCount(0);
+
+    await page.locator(".study-front").tap();
     await expect(page.getByText("最初は疑っていた")).toBeVisible();
-    await expect(page.getByText("右へスワイプで「覚えている」、左へで「覚えていない」")).toBeVisible();
-    await shot(page, testInfo, "2. 右へスワイプすると、答えが出る（→ と同じ）");
+    await expect(page.getByText("カードをタップで「覚えている」、左へスワイプで「覚えていない」")).toBeVisible();
+    await shot(page, testInfo, "2. カードをタップすると、答えが出る（→ と同じ）");
 
     await swipe(page, 300, 100);
     await expect(page.getByText(/やり直し 1 枚/)).toBeVisible();
     await shot(page, testInfo, "3. 左へスワイプすると「覚えていない」（← と同じ）。やり直しに回る");
 
-    // 短い動き（タップや指のぶれ）では、なにもしない
+    // 短い動き（指のぶれ）では、なにもしない
     await swipe(page, 100, 130);
     await expect(page.getByText("最初は疑っていた")).toHaveCount(0);
 
-    await swipe(page, 100, 300);
-    await swipe(page, 100, 300);
+    await page.locator(".study-front").tap();
+    await expect(page.getByText("最初は疑っていた")).toBeVisible();
+    await page.locator(".study-front").tap();
     await expect(page.getByText(/覚えている 1 回 \/ 覚えていない 1 回/)).toBeVisible();
-    await shot(page, testInfo, "4. 右へ2回スワイプすると、答えを見て「覚えている」。終わりの表示になる");
+    await shot(page, testInfo, "4. カードを2回タップすると、答えを見て「覚えている」。終わりの表示になる");
     await expect
       .poll(async () => {
         const { rows } = await db().query("SELECT remembered FROM review_logs WHERE deck_id = $1 ORDER BY id", [deck]);
@@ -793,6 +801,6 @@ test("UI-24 パソコン（マウス）では、スワイプの案内を出さ�
   await loginAs(context, me);
   await page.goto(`/decks/${deck}/study`);
   await expect(page.getByRole("button", { name: /答えを見る/ })).toBeVisible();
-  await expect(page.getByText("右へスワイプで答えを見る、左へで前のカードに戻る")).toBeHidden();
+  await expect(page.getByText("カードをタップで答えを見る、左へスワイプで前のカードに戻る")).toBeHidden();
   await shot(page, testInfo, "1. パソコンでは、スワイプの案内は出ない");
 });

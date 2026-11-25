@@ -1001,6 +1001,8 @@ kbd {
 
 /* タッチの端末（iPhone・iPad）だけに出す案内 / タッチの端末では出さない案内（キーの説明など） */
 .touch-only { display: none; }
+/* カードをすばやく2回タップしても、画面が拡大しないように */
+.study-card { touch-action: manipulation; }
 @media (hover: none) and (pointer: coarse) {
   .touch-only { display: block; }
   .no-touch { display: none; }

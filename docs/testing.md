@@ -128,7 +128,7 @@ docker compose run --rm e2e
 | テーブル定義書と DB が同じか（[tables](tables.md)） | `db/schema-doc.test.js` |
 | テスト仕様書とテストの ID が同じか（[test-spec](test-spec.md)） | `unit/test-spec.test.js` |
 | 画面の文言に「デッキ」を使わない（「単語帳」と呼ぶ） | `unit/wording.test.js` |
-| 左右のスワイプを ← / → に置きかえる（iPhone・iPad） | `unit/swipe.test.js` |
+| 左右のスワイプとタップを ← / → に置きかえる（iPhone・iPad） | `unit/swipe.test.js` |
 | 画面の SQL（他人の単語帳は 404、トップ・統計のデータの分離、学習の順） | `db/pages.test.js` |
 | テスト実行ツールの仕様書の読み取り・結果のまとめ | `unit/test-runner.test.js` |
 | テスト結果レポートの結果のまとめ・HTML | `unit/report.test.js` |

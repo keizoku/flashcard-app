@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { MAX_SWIPE_MS, MIN_SWIPE_PX, swipeKey } from "@/lib/swipe";
+import { isTap, MAX_SWIPE_MS, MAX_TAP_MS, MAX_TAP_PX, MIN_SWIPE_PX, swipeKey } from "@/lib/swipe";
 
 // iPhone・iPad など、キーボードのない端末で、左右のスワイプを ← / → キーの代わりにする
 
@@ -27,4 +27,13 @@ test("SW-03 短すぎる・ゆっくりすぎる・縦に動かした（スク�
   expect(swipeKey(at(100, 300), at(220, 340, 200))).toBe("ArrowRight");
   // 始まりがない
   expect(swipeKey(null, at(220))).toBeNull();
+});
+
+test("SW-04 タップ: ほとんど動かさず、すぐ離したときだけ。動かした・長く押したときはタップではない", () => {
+  expect(isTap(at(100, 300, 0), at(100, 300, 100))).toBe(true);
+  expect(isTap(at(100, 300, 0), at(100 + MAX_TAP_PX, 300 + MAX_TAP_PX, 100))).toBe(true);
+  expect(isTap(at(100, 300, 0), at(100 + MAX_TAP_PX + 1, 300, 100))).toBe(false);
+  expect(isTap(at(100, 300, 0), at(100, 300 + MAX_TAP_PX + 1, 100))).toBe(false);
+  expect(isTap(at(100, 300, 0), at(100, 300, MAX_TAP_MS + 1))).toBe(false); // 長押し（文字を選ぶなど）
+  expect(isTap(null, at(100))).toBe(false);
 });
