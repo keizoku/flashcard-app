@@ -97,6 +97,19 @@ describe("パスキーの登録", () => {
   });
 });
 
+test("PK-10 Vercel で APP_URL を入れ忘れても、パスキーのドメインは localhost ではなく、公開している URL のドメインになる", async () => {
+  const saved = process.env.APP_URL;
+  try {
+    delete process.env.APP_URL;
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = "flashcard-app-xxxx.vercel.app";
+    expect((await beginPasskeyRegistration(me)).options.rp.id).toBe("flashcard-app-xxxx.vercel.app");
+    expect((await beginPasskeyLogin()).options.rpId).toBe("flashcard-app-xxxx.vercel.app");
+  } finally {
+    process.env.APP_URL = saved;
+    delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  }
+});
+
 describe("パスキーでログイン", () => {
   test("PK-04 登録した端末でログインできる。使った日時と回数を記録する。同じ合言葉は2回使えない", async () => {
     const device = await register(me);

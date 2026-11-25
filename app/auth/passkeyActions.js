@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { isHttpsApp } from "@/lib/appUrl";
 import { createSession, requireUser } from "@/lib/auth";
 import {
   beginPasskeyLogin,
@@ -19,7 +20,7 @@ async function setChallengeCookie(token) {
   (await cookies()).set(CHALLENGE_COOKIE, token, {
     httpOnly: true,
     sameSite: "strict",
-    secure: (process.env.APP_URL ?? "").startsWith("https:"),
+    secure: isHttpsApp(),
     path: "/",
     maxAge: 5 * 60,
   });

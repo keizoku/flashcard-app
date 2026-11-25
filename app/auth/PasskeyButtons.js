@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { browserSupportsWebAuthn, startAuthentication, startRegistration } from "@simplewebauthn/browser";
+import { rpIdFitsHost } from "@/lib/appUrl";
 import {
   completePasskeyLogin,
   completePasskeyRegistration,
@@ -13,8 +14,21 @@ import {
 
 // パスキーの画面の部品。端末とのやりとり（指紋・顔・PIN の確認）は、ブラウザが出す画面で行う
 
+// アプリの設定（APP_URL）のドメインと、開いているページのドメインが違うと、ブラウザはパスキーを使わせない。
+// そのときは、原因がわかる言葉で知らせる
+class WrongDomainError extends Error {}
+function checkDomain(rpId) {
+  if (!rpIdFitsHost(rpId, window.location.hostname)) {
+    throw new WrongDomainError(
+      `アプリの設定（APP_URL）のドメイン「${rpId}」と、開いているページ「${window.location.hostname}」が違うため、パスキーを使えません。` +
+        "管理する人が APP_URL を直してください"
+    );
+  }
+}
+
 // 端末の画面で「キャンセル」を押したときなど
 function messageOf(err, fallback) {
+  if (err instanceof WrongDomainError) return err.message;
   if (err?.name === "NotAllowedError" || err?.name === "AbortError") return "キャンセルしました（または時間切れです）";
   if (err?.name === "InvalidStateError") return "この端末のパスキーは、もう登録されています";
   return fallback;
@@ -39,6 +53,7 @@ export function PasskeyLoginButton({ next }) {
     setError(null);
     try {
       const options = await startPasskeyLogin();
+      checkDomain(options.rpId);
       const answer = await startAuthentication({ optionsJSON: options });
       // うまくいけば、サーバーが元の画面へ移す（ここには戻らない）
       const r = await completePasskeyLogin(answer, next);
@@ -83,6 +98,7 @@ export function PasskeyManager({ passkeys, maxNameLength }) {
     setMessage(null);
     try {
       const options = await startPasskeyRegistration();
+      checkDomain(options.rp?.id);
       const answer = await startRegistration({ optionsJSON: options });
       const r = await completePasskeyRegistration(answer, name);
       if (r.error) {

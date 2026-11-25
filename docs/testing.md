@@ -130,6 +130,7 @@ docker compose run --rm e2e
 | 画面の文言に「デッキ」を使わない（「単語帳」と呼ぶ） | `unit/wording.test.js` |
 | 左右のスワイプとタップを ← / → に置きかえる（iPhone・iPad） | `unit/swipe.test.js` |
 | パスキーの登録・ログイン・削除（偽物の端末 `fakeAuthenticator.js` で確かめる） | `db/passkeys.test.js` |
+| このアプリの URL（APP_URL・Vercel の URL・localhost） | `unit/app-url.test.js` |
 | 画面の SQL（他人の単語帳は 404、トップ・統計のデータの分離、学習の順） | `db/pages.test.js` |
 | テスト実行ツールの仕様書の読み取り・結果のまとめ | `unit/test-runner.test.js` |
 | テスト結果レポートの結果のまとめ・HTML | `unit/report.test.js` |
