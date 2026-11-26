@@ -106,6 +106,36 @@ describe("はじめの4ステップ", () => {
     const deck = (await pool.query("SELECT id FROM decks WHERE user_id = $1", [me.id])).rows[0];
     expect(redirectTo).toBe(`/decks/${deck.id}/import`);
   });
+
+  test("OB-09 サンプルの単語帳がある人（おためし）: 「サンプルで試す」（記憶テスト・字幕から文を選ぶ）を別に出す。サンプルでは「自分で作る」のステップは進まない。ない人には出さない", async () => {
+    expect((await getOnboarding(me.id)).sample).toBeNull();
+
+    const sample = await createDeck(me.id, { name: "サンプル" });
+    const story = await createDeck(me.id, { name: "物語のサンプル", kind: "story" });
+    await pool.query("UPDATE decks SET is_sample = true WHERE id = ANY($1::int[])", [[sample, story]]);
+    const card = await createCard(sample);
+    await createCard(story);
+    let o = await getOnboarding(me.id);
+    expect(o.sample).toEqual({ deckId: sample, studied: false, studyHref: `/decks/${sample}/study`, importHref: `/decks/${sample}/import` });
+    // サンプルだけでは、自分で作るステップ（単語帳・カード・記憶テスト）は終わらない。記憶テストの行き先にもしない
+    expect(doneOf(o)).toEqual({ level: false, deck: false, cards: false, study: false });
+    expect(hrefOf(o, "study")).toBeNull();
+
+    // サンプルで記憶テストをすると「サンプルで試す」が終わる。自分で作るステップはそのまま
+    await pool.query("INSERT INTO review_logs (card_id, deck_id, remembered) VALUES ($1, $2, true)", [card, sample]);
+    o = await getOnboarding(me.id);
+    expect(o.sample.studied).toBe(true);
+    expect(doneOf(o).study).toBe(false);
+    expect(o.show).toBe(true);
+
+    // 自分の動画の単語帳で進める
+    const mine = await createDeck(me.id, { name: "自分の動画" });
+    o = await getOnboarding(me.id);
+    expect(doneOf(o).deck).toBe(true);
+    expect(hrefOf(o, "cards")).toBe(`/decks/${mine}/import`);
+    // 他人のサンプルは見ない
+    expect((await getOnboarding(other.id)).sample).toBeNull();
+  });
 });
 
 // JSX の中の文字をすべてつなげる（部品の中身までは開かない。手順の部品だけは開く）

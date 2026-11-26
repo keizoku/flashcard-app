@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createSession, destroySession, getCurrentUser } from "@/lib/auth";
 import { clientIp, createGuest, deleteGuest } from "@/lib/guest";
-import { createStarterDeck } from "@/lib/starterDeck";
+import { createStarterDecks } from "@/lib/starterDeck";
 
 // おためしを始める（/try の画面から）。1日で消えることに同意してもらってから作る
 export async function startGuest(prevState, formData) {
@@ -14,9 +14,9 @@ export async function startGuest(prevState, formData) {
   }
   const r = await createGuest({ ip: clientIp(await headers()) });
   if (r.error) return { error: r.error };
-  // すぐ試せるよう、物語の単語帳を1冊入れておく（作れなくても、おためしは始める）
+  // すぐ試せるよう、動画の単語帳と物語の単語帳を入れておく（作れなくても、おためしは始める）
   try {
-    await createStarterDeck(r.user.id);
+    await createStarterDecks(r.user.id);
   } catch (err) {
     console.error("おためしの単語帳を作れませんでした", err);
   }

@@ -875,8 +875,16 @@ test("UI-26 おためし: 登録せずに試す → 同意して始める → �
   const header = page.locator("header");
   await expect(header.getByRole("link", { name: "おためし中（あと 24 時間）" })).toBeVisible();
   await expect(header.getByRole("button", { name: "ログアウト" })).toHaveCount(0);
-  // すぐ試せる物語の単語帳が、最初から1冊入っている
+  // すぐ試せる単語帳（動画と物語）が、最初から2冊入っている
   await expect(page.getByText("物語: The First Pancake")).toBeVisible();
+  await expect(page.getByText(/Grand Train Tour of Switzerland/).first()).toBeVisible();
+  // はじめのステップは、レベルのあと「A. サンプルで試す」と「B. 自分で作る」に分かれる
+  const sampleRoute = page.getByRole("region", { name: "A. サンプルの単語帳で試す" });
+  await expect(sampleRoute.getByRole("link", { name: "学習する" })).toHaveAttribute("href", /\/decks\/\d+\/study$/);
+  await expect(sampleRoute.getByRole("link", { name: "文を選ぶ" })).toHaveAttribute("href", /\/decks\/\d+\/import$/);
+  const ownRoute = page.getByRole("region", { name: "B. 自分で動画を選んで、単語帳を作る" });
+  await expect(ownRoute.getByRole("link", { name: "単語帳を作る" })).toHaveAttribute("href", "/decks/new");
+  await shot(page, testInfo, "1b. 始めた直後のトップ。はじめのステップが「A. サンプルで試す」と「B. 自分で作る」に分かれる");
   await page.goto("/decks/new");
   const samples = page.getByRole("region", { name: "おためし用のサンプル動画" });
   await expect(samples.getByRole("listitem")).toHaveCount(2);
@@ -905,7 +913,7 @@ test("UI-26 おためし: 登録せずに試す → 同意して始める → �
   await createDeck(rows[0].id, { name: "おためしの単語帳" });
   await page.goto("/");
   await expect(page.getByText("おためしの単語帳")).toBeVisible();
-  await shot(page, testInfo, "2. おためしが始まった。画面の上に「おためし中（あと 24 時間）」。最初から物語の単語帳が入っていて、自分でも単語帳を作れる");
+  await shot(page, testInfo, "2. おためしが始まった。画面の上に「おためし中（あと 24 時間）」。最初から動画と物語の単語帳が入っていて、自分でも単語帳を作れる");
 
   await header.getByRole("link", { name: /おためし中/ }).click();
   await expect(page.getByRole("heading", { name: "おためし中" })).toBeVisible();

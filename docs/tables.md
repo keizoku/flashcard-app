@@ -17,7 +17,7 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 | [passkeys](#passkeys) | パスキー（端末の公開鍵） | 021 |
 | [passkey_challenges](#passkey_challenges) | パスキーの登録・ログインの合言葉 | 021 |
 | [guest_starts](#guest_starts) | おためしを始めた記録（回数の制限のため） | 022 |
-| [decks](#decks) | 単語帳 | 001 |
+| [decks](#decks) | 単語帳 | 001（003・005・012・013・014・023 などで列を追加） |
 | [cards](#cards) | カード | 001 |
 | [card_targets](#card_targets) | カードの覚えたい語 | 011 |
 | [review_logs](#review_logs) | 「覚えている / 覚えていない」の記録 | 008 |
@@ -149,6 +149,7 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 | user_id | integer | ○ | | 持ち主。NULL はユーザー管理を入れる前のデータ（最初に登録したユーザーが引き継ぐ） |
 | published_at | timestamptz | ○ | | 公開した日時（みんなの単語帳に出す）。NULL = 公開していない |
 | source_deck_id | integer | ○ | | 取り込み元の単語帳（みんなの単語帳から取り込んだとき）。元を消すと NULL |
+| is_sample | boolean | | false | おためしユーザーに最初から入れた単語帳（サンプル）か（023）。はじめのステップで、自分で作った単語帳と分けて数える |
 
 - 主キー: `id`
 - 外部キー: `user_id` → `users.id`（ユーザーを消すと消える）、`source_deck_id` → `decks.id`（元を消すと NULL）

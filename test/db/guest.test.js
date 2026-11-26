@@ -343,27 +343,48 @@ describe("おためし用のサンプル動画", () => {
 });
 
 describe("最初から入っている単語帳", () => {
-  test("GU-17 おためしを始めると、すぐ試せる物語の単語帳が1冊入っている（カード・和訳・語句の意味つき）。はじめの4ステップでは、単語帳づくりは終わった扱いにしない", async () => {
-    const { getOnboarding } = await import("@/lib/onboarding");
+  test("GU-17 おためしを始めると、すぐ試せる単語帳が2冊入っている: 動画の単語帳（字幕・AI で整えた文・カードつき）と、物語の単語帳。ほかの人には入らない", async () => {
     const { STARTER_WORDS } = await import("@/lib/starterDeck");
+    const { default: snapshot } = await import("@/data/starter/grand-train-tour.json");
     const guest = await guestLogin("203.0.113.5", { keepStarter: true });
-    const { rows: decks } = await pool.query("SELECT id, name, kind FROM decks WHERE user_id = $1", [guest.id]);
-    expect(decks).toHaveLength(1);
-    expect(decks[0]).toMatchObject({ kind: "story", name: "物語: The First Pancake" });
-    const { rows: cards } = await pool.query(
-      "SELECT c.front, c.ai_translation, t.word, t.meaning FROM cards c JOIN card_targets t ON t.card_id = c.id WHERE c.deck_id = $1",
-      [decks[0].id]
+    const { rows: decks } = await pool.query(
+      "SELECT id, name, kind, video_id, transcript, sentences, sentences_hash FROM decks WHERE user_id = $1 ORDER BY id",
+      [guest.id]
     );
-    expect(new Set(cards.map((c) => c.word))).toEqual(new Set(STARTER_WORDS));
-    for (const c of cards) {
+    expect(decks.map((d) => d.kind)).toEqual(["video", "story"]);
+    // どちらもサンプルの印が付いている（はじめのステップで、自分で作った単語帳と分けて数える）
+    expect((await pool.query("SELECT bool_and(is_sample) AS all FROM decks WHERE user_id = $1", [guest.id])).rows[0].all).toBe(true);
+
+    // 動画の単語帳: 書き出したファイルのとおり
+    const video = decks[0];
+    expect(video).toMatchObject({ name: snapshot.name, video_id: "5JK7vjVaIvo", transcript: snapshot.transcript });
+    expect(video.sentences).toEqual(snapshot.sentences);
+    expect(video.sentences_hash).toBeTruthy(); // 字幕を変えていないので、整えた文がそのまま使われる
+    const { getDeckTags } = await import("@/lib/tags");
+    expect(await getDeckTags(video.id)).toEqual(snapshot.tags);
+    const { rows: vcards } = await pool.query(
+      `SELECT c.front, c.video_id, c.start_seconds, c.ai_translation, c.review_box, t.word, t.meaning
+       FROM cards c JOIN card_targets t ON t.card_id = c.id WHERE c.deck_id = $1 ORDER BY c.id, t.position`,
+      [video.id]
+    );
+    expect(vcards.map((c) => c.front)).toEqual(snapshot.cards.flatMap((c) => c.targets.map(() => c.front)));
+    expect(vcards.map((c) => c.word)).toEqual(snapshot.cards.flatMap((c) => c.targets.map((t) => t.word)));
+    for (const c of vcards) {
+      expect(c).toMatchObject({ video_id: "5JK7vjVaIvo", review_box: 0 });
+      expect(c.ai_translation).toBeTruthy();
+    }
+
+    // 物語の単語帳
+    expect(decks[1].name).toBe("物語: The First Pancake");
+    const { rows: scards } = await pool.query(
+      "SELECT c.ai_translation, t.word, t.meaning FROM cards c JOIN card_targets t ON t.card_id = c.id WHERE c.deck_id = $1",
+      [decks[1].id]
+    );
+    expect(new Set(scards.map((c) => c.word))).toEqual(new Set(STARTER_WORDS));
+    for (const c of scards) {
       expect(c.ai_translation).toBeTruthy();
       expect(c.meaning).toBeTruthy();
     }
-    // 「単語帳を作る」「字幕を貼る」は、自分でやってもらう。記憶テストは、この単語帳ですぐできる
-    const o = await getOnboarding(guest.id);
-    expect(o.steps.find((x) => x.key === "deck").done).toBe(false);
-    expect(o.steps.find((x) => x.key === "cards").done).toBe(false);
-    expect(o.steps.find((x) => x.key === "study").href).toBe(`/decks/${decks[0].id}/study`);
     // ほかの人には入らない
     expect(await count("SELECT count(*)::int AS n FROM decks WHERE user_id = $1", [other.id])).toBe(0);
   });

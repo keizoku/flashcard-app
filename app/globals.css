@@ -1012,6 +1012,13 @@ kbd {
 .onboarding-step.done .onboarding-body strong { color: var(--muted); font-weight: normal; text-decoration: line-through; }
 .onboarding-body { display: grid; gap: 2px; flex: 1; min-width: 0; }
 .onboarding-body .note, .onboarding-head .note { margin: 0; }
+/* サンプルの単語帳がある人（おためし）: 「A. サンプルで試す」と「B. 自分で作る」に分ける */
+.onboarding-branch { margin: 12px 0 0; font-weight: 600; font-size: 0.95rem; }
+.onboarding-routes { display: grid; gap: 10px; margin-top: 8px; }
+.onboarding-route { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+.onboarding-route h3 { margin: 0; font-size: 0.95rem; }
+.onboarding-route > .note { margin: 2px 0 0; }
+.onboarding-route .onboarding-steps { margin-top: 4px; }
 .sr-only {
   position: absolute;
   width: 1px;

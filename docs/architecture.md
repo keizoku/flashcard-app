@@ -74,8 +74,9 @@ app/                 画面（Next.js App Router）
   components/        共通の部品（読み上げ、強調表示、タグ、動画プレーヤー、勉強時間の計測など）
 lib/                 サーバー側のロジック（画面から独立。単体テストの主な対象）
 db/migrations/       テーブルの変更履歴（番号順）
-data/                単語の頻出度リスト・イディオムのリスト
+data/                単語の頻出度リスト・イディオムのリスト、おためしの最初の単語帳（starter/）
 scripts/migrate.mjs  マイグレーションの実行
+scripts/export-deck.mjs  手元の単語帳を1冊、JSON に書き出す（おためしの最初の単語帳を作るとき）
 middleware.js        ログインしていない人をログイン画面へ送る
 vercel.json          Vercel の Cron（おためしユーザーの片付けを1日1回）
 test/                単体テスト（Vitest）
@@ -134,6 +135,7 @@ sequenceDiagram
 | `appUrl.js` | このアプリの URL（`APP_URL`、なければ Vercel の本番の URL、なければ localhost）。画面の部品からも使う | |
 | `passkeys.js` | パスキーの登録・ログイン・一覧・削除（`@simplewebauthn/server`） | ○ |
 | `guest.js` | おためしユーザー（作る・削除する・始められる回数と作れる量の制限・使えない機能） | ○ |
+| `starterDeck.js` | おためしユーザーに最初から入れる単語帳（動画の単語帳の書き出し・物語）を入れる | ○ |
 | `sampleVideos.js` | おためしユーザーに出す、サンプルの動画（URL・題名・長さ）。画面の部品からも使う | |
 | `transcript.js` | 字幕を区間・文に分け、知らない語を数えて段階に分ける | |
 | `vocab.js` | 単語の原形と頻出順位（`data/en-words.txt`、wink-lemmatizer） | |

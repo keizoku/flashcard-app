@@ -68,6 +68,7 @@ erDiagram
 | 020_drop_videos.sql | 「動画を探す」（おすすめの動画）をなくしたので、videos を消す |
 | 021_passkeys.sql | パスキー（passkeys）と、登録・ログインの合言葉（passkey_challenges） |
 | 022_guests.sql | おためしユーザー（users.guest_expires_at）と、おためしを始めた記録（guest_starts） |
+| 023_sample_decks.sql | おためしユーザーに最初から入れた単語帳の印（decks.is_sample） |
 
 決まり:
 - 当てたファイルは書き換えない。直すときは次の番号のファイルを足す
