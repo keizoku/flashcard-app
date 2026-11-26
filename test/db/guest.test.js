@@ -40,11 +40,14 @@ async function start(ip = "203.0.113.1", agree = true) {
   return runAction(startGuest({ error: null }, formData(agree ? { agree: "on" } : {})));
 }
 
-// おためしユーザーを作って、ログインした状態にする
-async function guestLogin(ip = "203.0.113.1") {
+// おためしユーザーを作って、ログインした状態にする。
+// 最初から入っているお試しの単語帳は、数を確かめやすいよう消しておく（keepStarter で残す）
+async function guestLogin(ip = "203.0.113.1", { keepStarter = false } = {}) {
   const { redirectTo } = await start(ip);
   expect(redirectTo).toBe("/");
-  return getCurrentUser();
+  const user = await getCurrentUser();
+  if (!keepStarter) await pool.query("DELETE FROM decks WHERE user_id = $1", [user.id]);
+  return user;
 }
 
 // 自分のカードを n 枚にする（1つの単語帳に入れる）
@@ -336,5 +339,32 @@ describe("おためし用のサンプル動画", () => {
     await loginAs(other);
     page = await NewDeckPage({ searchParams: Promise.resolve({}) });
     expect(propsOf(page, AddDeckForm).samples ?? null).toBeNull();
+  });
+});
+
+describe("最初から入っている単語帳", () => {
+  test("GU-17 おためしを始めると、すぐ試せる物語の単語帳が1冊入っている（カード・和訳・語句の意味つき）。はじめの4ステップでは、単語帳づくりは終わった扱いにしない", async () => {
+    const { getOnboarding } = await import("@/lib/onboarding");
+    const { STARTER_WORDS } = await import("@/lib/starterDeck");
+    const guest = await guestLogin("203.0.113.5", { keepStarter: true });
+    const { rows: decks } = await pool.query("SELECT id, name, kind FROM decks WHERE user_id = $1", [guest.id]);
+    expect(decks).toHaveLength(1);
+    expect(decks[0]).toMatchObject({ kind: "story", name: "物語: The First Pancake" });
+    const { rows: cards } = await pool.query(
+      "SELECT c.front, c.ai_translation, t.word, t.meaning FROM cards c JOIN card_targets t ON t.card_id = c.id WHERE c.deck_id = $1",
+      [decks[0].id]
+    );
+    expect(new Set(cards.map((c) => c.word))).toEqual(new Set(STARTER_WORDS));
+    for (const c of cards) {
+      expect(c.ai_translation).toBeTruthy();
+      expect(c.meaning).toBeTruthy();
+    }
+    // 「単語帳を作る」「字幕を貼る」は、自分でやってもらう。記憶テストは、この単語帳ですぐできる
+    const o = await getOnboarding(guest.id);
+    expect(o.steps.find((x) => x.key === "deck").done).toBe(false);
+    expect(o.steps.find((x) => x.key === "cards").done).toBe(false);
+    expect(o.steps.find((x) => x.key === "study").href).toBe(`/decks/${decks[0].id}/study`);
+    // ほかの人には入らない
+    expect(await count("SELECT count(*)::int AS n FROM decks WHERE user_id = $1", [other.id])).toBe(0);
   });
 });
