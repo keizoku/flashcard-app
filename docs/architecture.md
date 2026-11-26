@@ -59,6 +59,7 @@ app/                 画面（Next.js App Router）
   actions.js         単語帳の作成・削除、カードの追加
   auth/              ログイン・登録などの Server Action とフォーム
   login/ signup/ verify/ resend/ forgot-password/ reset-password/ account/
+  try/               登録せずに試す（おためしユーザーを作る・終える）
   decks/[id]/        単語帳画面（カード一覧、解説の取り込み、動画プレーヤー、物語の通し読み・スライド）
     import/          字幕の解析と、候補の文からカードを登録
     study/           記憶テスト
@@ -69,12 +70,14 @@ app/                 画面（Next.js App Router）
   stats/             統計（勉強時間と、手で時間を足すフォームも）
   api/study-time/    画面から勉強時間を受け取る（POST。sendBeacon で送ってくる）
   api/scenes/[id]/image/  物語の場面の絵を見る（GET）・取り込む（POST）。自分の場面だけ
+  api/cron/cleanup-guests/  期限の過ぎたおためしユーザーを削除する（GET。Vercel の Cron が1日1回呼ぶ）
   components/        共通の部品（読み上げ、強調表示、タグ、動画プレーヤー、勉強時間の計測など）
 lib/                 サーバー側のロジック（画面から独立。単体テストの主な対象）
 db/migrations/       テーブルの変更履歴（番号順）
 data/                単語の頻出度リスト・イディオムのリスト
 scripts/migrate.mjs  マイグレーションの実行
 middleware.js        ログインしていない人をログイン画面へ送る
+vercel.json          Vercel の Cron（おためしユーザーの片付けを1日1回）
 test/                単体テスト（Vitest）
 e2e/                 画面のテスト（Playwright）
 tools/test-runner/   ブラウザで単体テストを1件ずつ実行するツール（npm run test:ui）
@@ -130,6 +133,8 @@ sequenceDiagram
 | `mail.js` | メール送信（nodemailer）、`appUrl` | |
 | `appUrl.js` | このアプリの URL（`APP_URL`、なければ Vercel の本番の URL、なければ localhost）。画面の部品からも使う | |
 | `passkeys.js` | パスキーの登録・ログイン・一覧・削除（`@simplewebauthn/server`） | ○ |
+| `guest.js` | おためしユーザー（作る・削除する・始められる回数と作れる量の制限・使えない機能） | ○ |
+| `sampleVideos.js` | おためしユーザーに出す、サンプルの動画（URL・題名・長さ）。画面の部品からも使う | |
 | `transcript.js` | 字幕を区間・文に分け、知らない語を数えて段階に分ける | |
 | `vocab.js` | 単語の原形と頻出順位（`data/en-words.txt`、wink-lemmatizer） | |
 | `idioms.js` | イディオムの照合（`data/idioms.tsv`） | |
@@ -151,7 +156,7 @@ sequenceDiagram
 | `youtube.js` / `videoTitle.js` / `format.js` / `levels.js` | 小さな道具 | |
 
 `import "server-only"` が付いたファイルは、ブラウザ側に入らない（Next.js がビルド時に止める）。
-`youtube.js` / `format.js` / `levels.js` / `review.js` / `tagCandidates.js` / `studyClock.js` / `swipe.js` / `sceneUtils.js` / `uiPrefs.js` は画面の部品からも使う。
+`youtube.js` / `format.js` / `levels.js` / `review.js` / `tagCandidates.js` / `studyClock.js` / `swipe.js` / `sceneUtils.js` / `uiPrefs.js` / `sampleVideos.js` は画面の部品からも使う。
 
 ## 外部とのつながり
 

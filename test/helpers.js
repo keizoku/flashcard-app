@@ -5,13 +5,14 @@ import { hashToken } from "@/lib/auth";
 
 const TABLES = [
   "review_logs", "card_targets", "cards", "deck_tags", "tags", "decks",
-  "known_words", "settings", "email_tokens", "user_sessions", "users", "study_time", "story_scenes", "passkeys", "passkey_challenges",
+  "known_words", "settings", "email_tokens", "user_sessions", "users", "study_time", "story_scenes", "passkeys", "passkey_challenges", "guest_starts",
 ];
 
 // すべてのテーブルを空にして、Cookie と送ったメールも消す
 export async function resetDb() {
   await pool.query(`TRUNCATE ${TABLES.join(", ")} RESTART IDENTITY CASCADE`);
   globalThis.testCookies.clear();
+  globalThis.testHeaders = {};
   globalThis.sentMails.length = 0;
 }
 

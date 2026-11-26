@@ -6,7 +6,7 @@ import { HighlightedMany, HighlightedParts } from "@/app/components/Highlighted"
 import PromptBox from "@/app/components/PromptBox";
 import SpeakButton from "@/app/components/SpeakButton";
 import { displayTarget, levelLabel } from "@/lib/format";
-import { formatTime, videoUrl } from "@/lib/youtube";
+import { formatTime, parseVideoId, videoUrl } from "@/lib/youtube";
 import { analyzeTranscript, importSentences, markKnown, registerCards } from "./actions";
 
 const STAGES = [1, 2, 3];
@@ -168,15 +168,31 @@ export default function ImportClient({ deckId, initialUrl, initialText }) {
             動画と字幕{initialText ? "（保存済み。変更するときは開く）" : ""}
           </summary>
           <div className="details-body">
-            <label>
-              YouTube の URL（任意）
-              <input
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://www.youtube.com/watch?v=..."
-                inputMode="url"
-              />
-            </label>
+            <div className="field">
+              <label htmlFor="import-url" className="field-label">
+                YouTube の URL（任意）
+              </label>
+              <div className="url-row">
+                <input
+                  id="import-url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  inputMode="url"
+                />
+                {/* 字幕をコピーするために、動画を別のタブ（ウィンドウ）で開く。読み取れる URL のときだけ出す */}
+                {parseVideoId(url) && (
+                  <a
+                    href={videoUrl(parseVideoId(url))}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="secondary-button"
+                  >
+                    YouTube で開く ↗
+                  </a>
+                )}
+              </div>
+            </div>
             <label>
               字幕のテキスト
               <textarea

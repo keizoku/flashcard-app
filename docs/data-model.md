@@ -26,7 +26,9 @@ erDiagram
   decks ||--o{ story_scenes : "物語の場面と絵"
 ```
 
-- ユーザーを消すと、そのユーザーの単語帳・カード・設定などはすべて消える（`ON DELETE CASCADE`）
+- ユーザーを消すと、そのユーザーの単語帳・カード・設定などはすべて消える（`ON DELETE CASCADE`）。
+  おためしユーザー（`users.guest_expires_at` がある）は、期限が過ぎるとこの形で丸ごと消す
+- `guest_starts`（おためしを始めた記録）は、どのテーブルともつながっていない（ユーザーを消しても残る）
 - 単語帳を消すと、カード・覚えたい語・タグの付け外し・学習の記録が消える
 - 公開した単語帳を取り込むと、単語帳とカードがコピーされる（[features.md](features.md#10-単語帳の共有libsharingjsappshared)）。
   コピーの `source_deck_id` は取り込み元を指し、元を消すと NULL になる（コピーは消えない）
@@ -65,6 +67,7 @@ erDiagram
 | 019_onboarding.sql | 「はじめの4ステップ」を閉じた日時（users.onboarding_dismissed_at） |
 | 020_drop_videos.sql | 「動画を探す」（おすすめの動画）をなくしたので、videos を消す |
 | 021_passkeys.sql | パスキー（passkeys）と、登録・ログインの合言葉（passkey_challenges） |
+| 022_guests.sql | おためしユーザー（users.guest_expires_at）と、おためしを始めた記録（guest_starts） |
 
 決まり:
 - 当てたファイルは書き換えない。直すときは次の番号のファイルを足す

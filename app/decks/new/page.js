@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { getOnboarding } from "@/lib/onboarding";
+import { SAMPLE_VIDEOS } from "@/lib/sampleVideos";
 import { getAllTags } from "@/lib/tags";
 import AddDeckForm from "./AddDeckForm";
 
@@ -21,7 +22,8 @@ export default async function NewDeckPage() {
       </p>
       <h1>新しい単語帳</h1>
       {guiding && <DeckSteps />}
-      <AddDeckForm allTags={allTags} />
+      {/* おためしユーザーには、すぐ試せるサンプルの動画を出す（どの動画にするか迷わないように） */}
+      <AddDeckForm allTags={allTags} samples={user.guestExpiresAt ? SAMPLE_VIDEOS : null} />
     </main>
   );
 }

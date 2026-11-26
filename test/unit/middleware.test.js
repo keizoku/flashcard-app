@@ -30,3 +30,9 @@ test("MW-04 Cookie があれば通す（有効かどうかは各画面で確か�
 test("MW-05 /loginx のような似た名前は公開しない", () => {
   expect(middleware(req("/loginx")).headers.get("location")).toContain("/login?next=");
 });
+
+test("MW-06 おためしの説明（/try）と、期限の過ぎたおためしユーザーを消す処理（/api/cron/...）は、ログインしていなくても通す", () => {
+  expect(middleware(req("/try")).headers.get("location")).toBeNull();
+  expect(middleware(req("/api/cron/cleanup-guests")).headers.get("location")).toBeNull();
+  expect(middleware(req("/tryx")).headers.get("location")).toContain("/login?next=");
+});

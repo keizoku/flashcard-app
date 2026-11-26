@@ -14,7 +14,10 @@ delete globalThis.pgPool;
 
 // Cookie（ブラウザの代わりに、ここに保存する）
 globalThis.testCookies = new Map();
+// リクエストのヘッダー（接続元の IP など）。テストの中で globalThis.testHeaders に入れる
+globalThis.testHeaders = {};
 vi.mock("next/headers", () => ({
+  headers: async () => new Headers(globalThis.testHeaders),
   cookies: async () => {
     const jar = globalThis.testCookies;
     return {

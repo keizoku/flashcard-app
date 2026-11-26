@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { guestLimitError } from "@/lib/guest";
 import { ownsDeck, requireUser } from "@/lib/auth";
 import { pool } from "@/lib/db";
 import { analyzeWithState, loadContext } from "@/lib/comprehension";
@@ -109,7 +110,7 @@ export async function markKnown(word) {
 
 // 選んだ文をカードとして登録する。1つの文に覚えたい語が複数あれば（i+2、i+3）、1枚のカードにまとめる
 export async function registerCards({ deckId: deckIdArg, items }) {
-  const { deckId } = await ownedDeck(deckIdArg);
+  const { user, deckId } = await ownedDeck(deckIdArg);
   if (!deckId) return { error: "この単語帳は見つかりません" };
   if (!Array.isArray(items) || items.length === 0) return { error: "登録する文を選んでください" };
   if (items.length > MAX_ITEMS) return { error: `一度に登録できるのは ${MAX_ITEMS} 枚までです` };
@@ -145,6 +146,8 @@ export async function registerCards({ deckId: deckIdArg, items }) {
     }
     cards.push({ sentence, back, start, translation, targets });
   }
+  const limit = await guestLimitError(user.id, { cards: cards.length });
+  if (limit) return { error: limit };
 
   const client = await pool.connect();
   try {

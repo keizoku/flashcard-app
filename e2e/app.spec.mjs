@@ -861,3 +861,58 @@ test("UI-25 パスキー: アカウントの画面で登録し、ログアウト
   await expect(page).toHaveURL(/\/login/);
   await shot(page, testInfo, "5. 削除したパスキーでは、ログインできない");
 });
+
+test("UI-26 おためし: 登録せずに試す → 同意して始める → サンプルの動画が出る・単語帳を作れる → 「おためしを終える」で、アカウントごと削除される", async ({ page }, testInfo) => {
+  await page.goto("/");
+  await page.getByRole("link", { name: "登録せずに試す（1日）" }).first().click();
+  await expect(page).toHaveURL(/\/try$/);
+  await expect(page.getByText("アカウントごと自動で削除されます")).toBeVisible();
+  await shot(page, testInfo, "1. 説明の画面。1日で削除されること、作れる量、使えない機能が書いてある");
+
+  await page.getByLabel(/すべて削除されることを確かめました/).check();
+  await page.getByRole("button", { name: "おためしを始める" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  const header = page.locator("header");
+  await expect(header.getByRole("link", { name: "おためし中（あと 24 時間）" })).toBeVisible();
+  await expect(header.getByRole("button", { name: "ログアウト" })).toHaveCount(0);
+  await page.goto("/decks/new");
+  const samples = page.getByRole("region", { name: "おためし用のサンプル動画" });
+  await expect(samples.getByRole("listitem")).toHaveCount(2);
+  // 「YouTube で開く」は、別のタブで YouTube の動画を開く
+  const open = samples.getByRole("link", { name: /YouTube で開く/ }).first();
+  await expect(open).toHaveAttribute("href", "https://www.youtube.com/watch?v=jKi2SvWOCXc");
+  await expect(open).toHaveAttribute("target", "_blank");
+  await samples.getByRole("button", { name: "この動画を使う" }).first().click();
+  await expect(page.getByLabel(/YouTube の URL/)).toHaveValue("https://www.youtube.com/watch?v=jKi2SvWOCXc");
+  await shot(page, testInfo, "2a. 新しい単語帳の画面に、サンプルの動画が出る。「YouTube で開く」で別のタブに動画、「この動画を使う」で URL が入る");
+
+  // 単語帳を作ると字幕を貼る画面へ。URL の横の「YouTube で開く」で、字幕をコピーする動画を別のタブで開ける
+  await expect(page.getByLabel("単語帳の名前")).not.toHaveValue("");
+  await page.getByRole("button", { name: "単語帳を作成" }).click();
+  await expect(page).toHaveURL(/\/decks\/\d+\/import$/);
+  await expect(page.getByLabel(/YouTube の URL/)).toHaveValue("https://www.youtube.com/watch?v=jKi2SvWOCXc");
+  const openVideo = page.locator(".url-row").getByRole("link", { name: /YouTube で開く/ });
+  await expect(openVideo).toHaveAttribute("href", "https://www.youtube.com/watch?v=jKi2SvWOCXc");
+  await expect(openVideo).toHaveAttribute("target", "_blank");
+  await shot(page, testInfo, "2b. 単語帳を作ると字幕を貼る画面へ。URL の横の「YouTube で開く」で、動画を別のタブで開ける");
+  await page.getByLabel(/YouTube の URL/).fill("not a url");
+  await expect(openVideo).toHaveCount(0);
+
+  const { rows } = await db().query("SELECT id FROM users WHERE guest_expires_at IS NOT NULL");
+  expect(rows).toHaveLength(1);
+  await createDeck(rows[0].id, { name: "おためしの単語帳" });
+  await page.goto("/");
+  await expect(page.getByText("おためしの単語帳")).toBeVisible();
+  await shot(page, testInfo, "2. おためしが始まった。画面の上に「おためし中（あと 24 時間）」が出て、単語帳を作れる");
+
+  await header.getByRole("link", { name: /おためし中/ }).click();
+  await expect(page.getByRole("heading", { name: "おためし中" })).toBeVisible();
+  await page.getByRole("button", { name: "おためしを終える" }).click();
+  await shot(page, testInfo, "3. アカウントの画面で「おためしを終える」を押すと、確かめる文が出る");
+  await page.getByRole("button", { name: "削除して終える" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(header.getByRole("link", { name: "ログイン" })).toBeVisible();
+  await expect.poll(async () => (await db().query("SELECT count(*)::int AS n FROM users WHERE guest_expires_at IS NOT NULL")).rows[0].n).toBe(0);
+  expect((await db().query("SELECT count(*)::int AS n FROM decks WHERE name = 'おためしの単語帳'")).rows[0].n).toBe(0);
+  await shot(page, testInfo, "4. 終えると、アカウントと単語帳が削除され、ホームページに戻る");
+});

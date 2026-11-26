@@ -11,11 +11,12 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 
 | テーブル | 内容 | 作ったマイグレーション |
 | --- | --- | --- |
-| [users](#users) | ユーザー | 013（014・019 で列を追加） |
+| [users](#users) | ユーザー（おためしユーザーも） | 013（014・019・022 で列を追加） |
 | [user_sessions](#user_sessions) | ログイン中のセッション | 013 |
 | [email_tokens](#email_tokens) | メールのリンクの合言葉 | 013 |
 | [passkeys](#passkeys) | パスキー（端末の公開鍵） | 021 |
 | [passkey_challenges](#passkey_challenges) | パスキーの登録・ログインの合言葉 | 021 |
+| [guest_starts](#guest_starts) | おためしを始めた記録（回数の制限のため） | 022 |
 | [decks](#decks) | 単語帳 | 001 |
 | [cards](#cards) | カード | 001 |
 | [card_targets](#card_targets) | カードの覚えたい語 | 011 |
@@ -43,9 +44,11 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 | created_at | timestamptz | | now() | 登録した日時 |
 | display_name | text | ○ | | 表示名（30文字まで）。公開した単語帳に、作った人として出す。NULL = まだ決めていない |
 | onboarding_dismissed_at | timestamptz | ○ | | トップの「はじめの4ステップ」を「閉じる」で消した日時（019）。NULL = まだ閉じていない |
+| guest_expires_at | timestamptz | ○ | | おためしユーザーの期限（022）。この日時を過ぎたら、アカウントごと削除する。NULL = ふつうのユーザー |
 
 - 主キー: `id`
-- インデックス: `users_email_idx`（一意、`lower(email)`）
+- インデックス: `users_email_idx`（一意、`lower(email)`）、`users_guest_expires_idx`（`guest_expires_at`、おためしユーザーだけ）
+- おためしユーザーの `email` は `guest-<ランダム>@guest.invalid`（メールは届かない）、`password_hash` はどのパスワードとも合わない値（パスワードではログインできない）
 
 ## user_sessions
 
@@ -113,6 +116,20 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 - 主キー: `token_hash`
 - 外部キー: `user_id` → `users.id`（ユーザーを消すと消える）
 - チェック: `purpose IN ('register', 'login')`
+
+## guest_starts
+
+おためしを始めた記録。同じ接続元から1日に始められる回数と、全体で1日に始められる回数を数える（[auth.md](auth.md#おためしユーザー)）。
+おためしを終えて（ユーザーを消して）も、この記録は残るので、回数は戻らない。
+
+| 列 | 型 | NULL | 初期値 | 説明 |
+| --- | --- | --- | --- | --- |
+| id | bigint | | 連番 | 主キー |
+| ip_hash | text | | | 接続元（IP アドレス）の sha256。IP アドレスそのものは保存しない |
+| created_at | timestamptz | | now() | 始めた日時。1日たったら、片付けのときに消す |
+
+- 主キー: `id`
+- インデックス: `guest_starts_ip_idx`（`ip_hash, created_at`）
 
 ## decks
 

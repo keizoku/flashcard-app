@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ownsDeck, requireUser } from "@/lib/auth";
 import { pool } from "@/lib/db";
+import { guestLimitError } from "@/lib/guest";
 import { dismissOnboardingFor, getOnboarding } from "@/lib/onboarding";
 import { MAX_TRANSCRIPT_LENGTH } from "@/lib/transcript";
 import { parseTags, setDeckTags } from "@/lib/tags";
@@ -34,6 +35,8 @@ export async function addDeck(prevState, formData) {
   if (transcript.length > MAX_TRANSCRIPT_LENGTH) {
     return { ...keep, error: `字幕が長すぎます（${MAX_TRANSCRIPT_LENGTH.toLocaleString()} 文字まで）` };
   }
+  const limit = await guestLimitError(user.id, { decks: 1 });
+  if (limit) return { ...keep, error: limit };
 
   const { rows } = await pool.query(
     "INSERT INTO decks (user_id, name, video_id, transcript) VALUES ($4, $1, $2, $3) RETURNING id",
@@ -67,6 +70,8 @@ export async function addCard(deckIdArg, prevState, formData) {
   if (front.length > MAX_LENGTH || back.length > MAX_LENGTH) {
     return { error: `${MAX_LENGTH}文字以内で入力してください`, front, back, version: Date.now() };
   }
+  const limit = await guestLimitError(user.id, { cards: 1 });
+  if (limit) return { error: limit, front, back, version: Date.now() };
 
   // 存在するデッキにだけ追加する（消されたデッキなどへの追加を防ぐ）
   const { rowCount } = await pool.query(

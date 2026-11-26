@@ -98,6 +98,10 @@ export function PasskeyManager({ passkeys, maxNameLength }) {
     setMessage(null);
     try {
       const options = await startPasskeyRegistration();
+      if (options?.error) {
+        setError(options.error);
+        return;
+      }
       checkDomain(options.rp?.id);
       const answer = await startRegistration({ optionsJSON: options });
       const r = await completePasskeyRegistration(answer, name);

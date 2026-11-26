@@ -894,6 +894,27 @@ kbd {
   padding: 10px 14px;
   margin: 0 0 20px;
 }
+/* おためしユーザー（app/try） */
+.site-header .nav-guest {
+  white-space: nowrap;
+  font-size: 0.85rem;
+  color: #b45309;
+  font-weight: 600;
+}
+.sample-videos ul { list-style: none; padding: 0; margin: 8px 0 0; display: grid; gap: 8px; }
+.sample-videos li { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.sample-videos li > span { display: grid; gap: 2px; min-width: 0; }
+.sample-videos .sample-actions { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
+.sample-videos .sample-actions > * { white-space: nowrap; }
+.sample-videos a.secondary-button { text-decoration: none; display: inline-block; }
+@media (max-width: 520px) { .sample-videos li { flex-direction: column; align-items: stretch; } }
+/* 字幕を貼る画面の URL の欄と「YouTube で開く」 */
+.url-row { display: flex; gap: 8px; align-items: center; }
+.url-row input { flex: 1; min-width: 0; }
+.url-row a.secondary-button { text-decoration: none; white-space: nowrap; flex-shrink: 0; }
+.try-rules { display: grid; gap: 8px; padding-left: 1.2em; margin: 0 0 20px; }
+.add-form .check-label { display: flex; gap: 8px; align-items: flex-start; font-weight: normal; }
+.check-label input { width: auto; margin-top: 4px; flex-shrink: 0; }
 .nav-logout { margin: 0; }
 .nav-logout button {
   white-space: nowrap;

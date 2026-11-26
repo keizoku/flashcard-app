@@ -14,6 +14,7 @@ import {
 import { isAllowedEmail } from "@/lib/allowlist";
 import { createSession, destroyOtherSessions, destroySession, requireUser } from "@/lib/auth";
 import { pool } from "@/lib/db";
+import { GUEST_BLOCKED } from "@/lib/guest";
 import { burnPasswordCheck, checkPasswordRule, hashPassword, verifyPassword } from "@/lib/password";
 
 const MAIL_ERROR = "メールを送れませんでした。しばらくしてからもう一度お試しください";
@@ -139,6 +140,7 @@ export async function resetPassword(token, prevState, formData) {
 // ---- アカウント ------------------------------------------------------------
 export async function changePassword(prevState, formData) {
   const user = await requireUser();
+  if (user.guestExpiresAt) return { error: GUEST_BLOCKED, saved: false };
   const current = String(formData.get("current") ?? "");
   const password = String(formData.get("password") ?? "");
   const { rows } = await pool.query("SELECT password_hash FROM users WHERE id = $1", [user.id]);

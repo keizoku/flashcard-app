@@ -24,6 +24,9 @@ export default async function LoginPage({ searchParams }) {
         <li>
           <Link href="/forgot-password">パスワードを忘れた</Link>
         </li>
+        <li>
+          アカウントを作らずに <Link href="/try">1日だけ試す</Link>
+        </li>
       </ul>
     </main>
   );

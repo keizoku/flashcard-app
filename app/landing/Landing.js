@@ -36,6 +36,9 @@ export default function Landing({ inviteOnly = false }) {
                 無料で始める
               </Link>
             )}
+            <Link href="/try" className="lp-button lp-ghost">
+              登録せずに試す（1日）
+            </Link>
             <a href="#how" className="lp-button lp-ghost">
               使い方を見る
             </a>
@@ -241,13 +244,16 @@ export default function Landing({ inviteOnly = false }) {
           <Link href="/login" className={`lp-button ${inviteOnly ? "lp-primary" : "lp-ghost"}`}>
             ログイン
           </Link>
+          <Link href="/try" className="lp-button lp-ghost">
+            登録せずに試す（1日）
+          </Link>
         </div>
       </section>
     </main>
   );
 }
 
-const INVITE_ONLY_NOTE = "今は、決まった人だけが使えます。新しい登録は受け付けていません。";
+const INVITE_ONLY_NOTE = "今は、決まった人だけが使えます。新しい登録は受け付けていませんが、「登録せずに試す」で1日だけ試せます。";
 
 function Feature({ title, icon, children }) {
   return (

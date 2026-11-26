@@ -7,17 +7,57 @@ import { addDeck } from "@/app/actions";
 
 const initialState = { error: null, name: "", url: "", transcript: "", version: 0 };
 
-export default function AddDeckForm({ allTags = [] }) {
+// samples: おためしユーザーに出すサンプルの動画（lib/sampleVideos.js）。押すと URL の欄に入る
+export default function AddDeckForm({ allTags = [], samples = null }) {
   const [state, formAction, pending] = useActionState(addDeck, initialState);
   const nameRef = useRef(null);
+  const urlRef = useRef(null);
   const { status, onUrlChange } = useVideoTitle(nameRef);
+
+  function pickSample(url) {
+    urlRef.current.value = url;
+    onUrlChange(url);
+  }
 
   return (
     // エラーのときは入力を残したまま作り直す（成功したら、作った単語帳の画面へ移る）
     <form action={formAction} className="add-form" key={state.version}>
+      {samples?.length > 0 && (
+        <section className="guide-box sample-videos" aria-label="おためし用のサンプル動画">
+          <p className="guide-title">どの動画にするか迷ったら、この動画で試してみてください</p>
+          <ul>
+            {samples.map((v) => (
+              <li key={v.id}>
+                <span>
+                  <strong>{v.title}</strong>
+                  <span className="note small">
+                    {Math.floor(v.seconds / 60)}分{v.seconds % 60}秒・英語の字幕あり。{v.note}
+                  </span>
+                </span>
+                <span className="sample-actions">
+                  {/* 字幕をコピーするには YouTube で開く必要があるので、別のタブ（ウィンドウ）で開く */}
+                  <a
+                    href={v.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="secondary-button"
+                    aria-label={`${v.title} を YouTube で開く（別のタブ）`}
+                  >
+                    YouTube で開く ↗
+                  </a>
+                  <button type="button" className="secondary-button" onClick={() => pickSample(v.url)}>
+                    この動画を使う
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <label>
         YouTube の URL（任意）
         <input
+          ref={urlRef}
           name="url"
           defaultValue={state.url}
           placeholder="https://www.youtube.com/watch?v=..."

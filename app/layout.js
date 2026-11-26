@@ -2,6 +2,7 @@ import Link from "next/link";
 import { logout } from "@/app/auth/actions";
 import { isSignupOpen } from "@/lib/allowlist";
 import { getCurrentUser } from "@/lib/auth";
+import { guestHoursLeft } from "@/lib/guest";
 import "./globals.css";
 
 export const metadata = {
@@ -18,7 +19,16 @@ export default async function RootLayout({ children }) {
           <nav>
             <Link href="/" className="brand">フラッシュカード</Link>
             <div className="nav-links">
-              {user ? (
+              {user?.guestExpiresAt ? (
+                <>
+                  <Link href="/shared">みんなの単語帳</Link>
+                  <Link href="/stats">統計</Link>
+                  <Link href="/settings">レベル設定</Link>
+                  <Link href="/account" className="nav-guest" title="おためし中。期限が来ると、アカウントごと削除されます">
+                    おためし中（あと {guestHoursLeft(user.guestExpiresAt)} 時間）
+                  </Link>
+                </>
+              ) : user ? (
                 <>
                   <Link href="/shared">みんなの単語帳</Link>
                   <Link href="/stats">統計</Link>
@@ -36,6 +46,7 @@ export default async function RootLayout({ children }) {
                   <Link href="/login">ログイン</Link>
                   {/* 使える人を決めているときは、新規登録を出さない */}
                   {isSignupOpen() && <Link href="/signup">新規登録</Link>}
+                  <Link href="/try">登録せずに試す</Link>
                 </>
               )}
             </div>

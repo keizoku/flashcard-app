@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { isHttpsApp } from "@/lib/appUrl";
 import { createSession, requireUser } from "@/lib/auth";
+import { GUEST_BLOCKED } from "@/lib/guest";
 import {
   beginPasskeyLogin,
   beginPasskeyRegistration,
@@ -40,8 +41,10 @@ function safeNext(raw) {
 }
 
 // ---- 登録（アカウントの画面） ----
+// おためしユーザーは、パスキーを登録できない（{ error } を返す）
 export async function startPasskeyRegistration() {
   const user = await requireUser();
+  if (user.guestExpiresAt) return { error: GUEST_BLOCKED };
   const { options, token } = await beginPasskeyRegistration(user);
   await setChallengeCookie(token);
   return options;
@@ -49,6 +52,7 @@ export async function startPasskeyRegistration() {
 
 export async function completePasskeyRegistration(response, name) {
   const user = await requireUser();
+  if (user.guestExpiresAt) return { error: GUEST_BLOCKED };
   const r = await finishPasskeyRegistration(user.id, await takeChallengeCookie(), response, name);
   return r.error ? { error: r.error } : {};
 }
