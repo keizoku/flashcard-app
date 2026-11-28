@@ -17,6 +17,7 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 | [passkeys](#passkeys) | パスキー（端末の公開鍵） | 021 |
 | [passkey_challenges](#passkey_challenges) | パスキーの登録・ログインの合言葉 | 021 |
 | [guest_starts](#guest_starts) | おためしを始めた記録（回数の制限のため） | 022 |
+| [guest_daily](#guest_daily) | おためしを始めた回数（日ごと。管理者の画面のため） | 024 |
 | [decks](#decks) | 単語帳 | 001（003・005・012・013・014・023 などで列を追加） |
 | [cards](#cards) | カード | 001 |
 | [card_targets](#card_targets) | カードの覚えたい語 | 011 |
@@ -130,6 +131,19 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 
 - 主キー: `id`
 - インデックス: `guest_starts_ip_idx`（`ip_hash, created_at`）
+
+## guest_daily
+
+おためしを始めた回数を、日ごと（日本時間）に数える。管理者の画面（[features.md](features.md#15-管理者の画面appadminlibadminstatsjs)）の「日ごとの推移」で使う。
+おためしユーザーと `guest_starts` は1日で消えるので、回数だけをここに残す。だれが始めたか（ユーザー・接続元）は残さない。
+
+| 列 | 型 | NULL | 初期値 | 説明 |
+| --- | --- | --- | --- | --- |
+| day | date | | | 日付（日本時間） |
+| starts | integer | | 0 | その日におためしを始めた回数。0以上 |
+
+- 主キー: `day`
+- チェック: `starts >= 0`
 
 ## decks
 

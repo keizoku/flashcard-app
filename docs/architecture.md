@@ -68,6 +68,7 @@ app/                 画面（Next.js App Router）
   stories/new/       覚えた語で物語を作る
   settings/          レベル設定、「知ってる」の語、読み上げの設定
   stats/             統計（勉強時間と、手で時間を足すフォームも）
+  admin/             管理者の画面（ユーザーの数・使われ方の集計。ADMIN_EMAILS の人だけ）
   api/study-time/    画面から勉強時間を受け取る（POST。sendBeacon で送ってくる）
   api/scenes/[id]/image/  物語の場面の絵を見る（GET）・取り込む（POST）。自分の場面だけ
   api/cron/cleanup-guests/  期限の過ぎたおためしユーザーを削除する（GET。Vercel の Cron が1日1回呼ぶ）
@@ -129,6 +130,8 @@ sequenceDiagram
 | `userAdmin.js` | メールなしでアカウントを作る・パスワードを作り直す・データを消して最初の状態に戻す（`scripts/create-user.mjs` / `reset-user.mjs` から使う） | |
 | `passwordHash.js` / `emailAddress.js` | パスワードの決まりとハッシュ / メールアドレスの整え方。Next.js の外の道具からも使うので `password.js` / `accounts.js` から分けてある | |
 | `allowlist.js` | 使える人をメールアドレスで決める（環境変数 `ALLOWED_EMAILS`。空ならだれでも） | |
+| `admin.js` | 管理者をメールアドレスで決める（環境変数 `ADMIN_EMAILS`。空ならだれも管理者でない）、`requireAdmin` | |
+| `adminStats.js` | 管理者の画面の集計（全体の数・日ごとの推移）。数だけを返す | ○ |
 | `accounts.js` | メールのリンク（確認・再設定）、登録の完了、メールの文面 | ○ |
 | `password.js` | パスワードのハッシュ（scrypt） | |
 | `mail.js` | メール送信（nodemailer）、`appUrl` | |

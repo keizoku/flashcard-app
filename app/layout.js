@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { logout } from "@/app/auth/actions";
+import { isAdmin } from "@/lib/admin";
 import { isSignupOpen } from "@/lib/allowlist";
 import { getCurrentUser } from "@/lib/auth";
 import { guestHoursLeft } from "@/lib/guest";
@@ -33,6 +34,8 @@ export default async function RootLayout({ children }) {
                   <Link href="/shared">みんなの単語帳</Link>
                   <Link href="/stats">統計</Link>
                   <Link href="/settings">レベル設定</Link>
+                  {/* 管理者（ADMIN_EMAILS の人）にだけ出す */}
+                  {isAdmin(user) && <Link href="/admin">管理</Link>}
                   {/* メールアドレスは出さない（画面を人に見られても大丈夫なように）。表示名がなければ「アカウント」 */}
                   <Link href="/account" className="nav-account" title="アカウント（表示名・パスワードの変更）">
                     {user.displayName ?? "アカウント"}

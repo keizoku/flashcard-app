@@ -586,6 +586,11 @@ kbd {
 .day-total { font-size: 0.7rem; color: var(--muted); }
 .day-label { font-size: 0.7rem; color: var(--muted); text-align: center; padding-top: 4px; }
 
+/* 管理者の画面 */
+.admin-group h3, .admin-page section > h3 { font-size: 1rem; margin: 16px 0 8px; }
+.admin-col { background: var(--time-vocab); }
+.admin-chart { margin-bottom: 12px; }
+
 /* 勉強時間（単語 = 青、リスニング = だいだい。色の見え方が違う人にも区別しやすい組み合わせ） */
 :root { --time-vocab: #2a78d6; --time-listening: #d0731a; }
 @media (prefers-color-scheme: dark) {

@@ -926,3 +926,31 @@ test("UI-26 おためし: 登録せずに試す → 同意して始める → �
   expect((await db().query("SELECT count(*)::int AS n FROM decks WHERE name = 'おためしの単語帳'")).rows[0].n).toBe(0);
   await shot(page, testInfo, "4. 終えると、アカウントと単語帳が削除され、ホームページに戻る");
 });
+
+test("UI-27 管理者の画面: 管理者にだけヘッダーに「管理」が出て、全体の数と日ごとの推移が見える。ほかの人は開けない", async ({ page, context }, testInfo) => {
+  const admin = await createUser("admin@example.com");
+  const deck = await createDeck(me.id, { name: "Deck" });
+  const card = await createCard(deck, { front: "Hello world." });
+  await db().query("INSERT INTO review_logs (card_id, deck_id, remembered) VALUES ($1, $2, true)", [card, deck]);
+  await db().query("INSERT INTO study_time (user_id, kind, seconds) VALUES ($1, 'vocab', 600)", [me.id]);
+
+  await loginAs(context, me);
+  await page.goto("/");
+  const header = page.locator(".site-header");
+  await expect(header.getByRole("link", { name: "統計" })).toBeVisible();
+  await expect(header.getByRole("link", { name: "管理" })).toHaveCount(0);
+  const res = await page.goto("/admin");
+  expect(res.status()).toBe(404);
+
+  await context.clearCookies();
+  await loginAs(context, admin);
+  await page.goto("/");
+  await header.getByRole("link", { name: "管理" }).click();
+  await expect(page).toHaveURL(/\/admin$/);
+  await expect(page.getByRole("heading", { name: "全体の数" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /日ごとの推移/ })).toBeVisible();
+  await expect(page.locator(".stat-tile").filter({ hasText: "登録ユーザー" }).locator(".stat-value")).toHaveText("3");
+  await expect(page.locator(".table-view tbody tr")).toHaveCount(30);
+  await expect(page.getByText("me@example.com")).toHaveCount(0);
+  await shot(page, testInfo, "1. 管理者の画面。ユーザーの数・使った人・使われ方と、直近30日の推移（数だけで、だれのデータかは出さない）");
+});

@@ -67,6 +67,7 @@ PowerShell から実行するなら、次のとおりです。
 メールは外には送られず、この受信箱（Mailpit）に届きます。本物のメールを送りたいときは、
 `.env.example` を `.env` にコピーして SMTP の設定を書き、`docker compose up -d` を実行します。
 使える人をメールアドレスで決めたいときは、`.env` の `ALLOWED_EMAILS` に書きます（空なら、だれでも登録できます）。
+管理者の画面（`/admin`。ユーザーの数・使われ方の集計）を見たいときは、`.env` の `ADMIN_EMAILS` に自分のメールアドレスを書き、`docker compose up -d` を実行します。
 
 ## 4. ふだんの使い方
 

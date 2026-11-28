@@ -49,6 +49,7 @@ docker run --rm -i postgres:17 psql "ここに Neon の接続の文字列" < fla
 | `DATABASE_URL` | Neon の接続の文字列（`-pooler` の付いたもの） |
 | `APP_URL` | 公開した URL（例: `https://flashcard-app-xxxx.vercel.app`）。メールのリンクと、ログインの Cookie を HTTPS だけにするのに使う。パスキーもこのドメインに結びつく（URL を変えると、登録したパスキーは使えなくなる）。入れ忘れても、Vercel が教える本番の URL（`VERCEL_PROJECT_PRODUCTION_URL`）を使う（`lib/appUrl.js`）。独自のドメインを使うときは、必ず入れる |
 | `ALLOWED_EMAILS` | **自分のメールアドレス**（まず自分だけで使うとき）。カンマ区切りで何人か入れられる。ほかの人は登録もログインもできない（[auth.md](auth.md)）。空にすると、だれでも登録できる |
+| `ADMIN_EMAILS` | **自分のメールアドレス**。管理者の画面（`/admin`。ユーザーの数・使われ方の集計）を見られる人。カンマ区切り。空なら、だれも見られない（[auth.md](auth.md#管理者libadminjs)） |
 | `SMTP_HOST` `SMTP_PORT` `SMTP_SECURE` `SMTP_USER` `SMTP_PASS` `MAIL_FROM` | メールを送る設定（[.env.example](../.env.example) の例と同じ）。ないと登録の確認メールが送れない |
 
 4. 「Deploy」を押す。初めは URL がわからないので、公開されたら `APP_URL` にその URL を入れて、「Redeploy」する
