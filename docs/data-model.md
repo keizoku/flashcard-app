@@ -70,6 +70,7 @@ erDiagram
 | 023_sample_decks.sql | おためしユーザーに最初から入れた単語帳の印（decks.is_sample） |
 | 024_guest_daily.sql | おためしを始めた回数を日ごとに数える（guest_daily）。管理者の画面のため |
 | 025_usernames.sql | メールアドレスをやめて ID でログインする（users.username・recovery_code_hash を足し、email・verified_at・email_tokens を消す。今までのアカウントはメールアドレスをそのまま ID にする。確認していないアカウントを消す）。登録の回数を数える signup_starts |
+| 026_terms.sql | 利用規約に同意した記録（users.terms_version・terms_agreed_at）。前からのアカウントは NULL（次に使うとき同意してもらう） |
 
 決まり:
 - 当てたファイルは書き換えない。直すときは次の番号のファイルを足す

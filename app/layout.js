@@ -54,6 +54,11 @@ export default async function RootLayout({ children }) {
           </nav>
         </header>
         {children}
+        {/* どの画面にも、無料・実験中であることと、利用規約へのリンクを出す */}
+        <footer className="site-footer">
+          <span>無料・実験中のサービスです。何も保証しません。</span>
+          <Link href="/terms">利用規約</Link>
+        </footer>
       </body>
     </html>
   );

@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
+import { TermsCheckbox } from "@/app/agree/AgreeForm";
 import { USERNAME_HINT, USERNAME_MAX } from "@/lib/username";
 import { changePassword, login, recoverPassword, regenerateRecoveryCode, signup } from "./actions";
 
@@ -125,9 +126,10 @@ export function SignupForm({ loggedIn = false }) {
       />
       <PasswordField autoComplete="new-password" hint={`${MIN}文字以上`} />
       <PasswordField name="password2" label="パスワード（確認）" autoComplete="new-password" />
+      <TermsCheckbox />
       <Error state={state} />
       <button type="submit" disabled={pending}>
-        {pending ? "登録中…" : "登録する"}
+        {pending ? "登録中…" : "同意して登録する"}
       </button>
     </form>
   );

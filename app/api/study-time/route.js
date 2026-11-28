@@ -1,10 +1,12 @@
 import { getCurrentUser } from "@/lib/auth";
+import { needsTermsAgreement } from "@/lib/terms";
 import { recordStudyTime } from "@/lib/studyTime";
 
 // 画面から勉強時間を受け取る。画面を閉じるときにも送れるよう、navigator.sendBeacon（本文は JSON の文字列）で送ってくる
 export async function POST(request) {
   const user = await getCurrentUser();
   if (!user) return Response.json({ error: "ログインしてください" }, { status: 401 });
+  if (needsTermsAgreement(user)) return Response.json({ error: "利用規約に同意してください" }, { status: 403 });
 
   // ほかのサイトから送らせない
   const origin = request.headers.get("origin");

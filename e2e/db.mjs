@@ -43,7 +43,8 @@ function hashPassword(password) {
 
 export async function createUser(username) {
   const { rows } = await db().query(
-    "INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username",
+    // 利用規約（版 1）に同意ずみの人にする（lib/terms.js の TERMS_VERSION）
+    "INSERT INTO users (username, password_hash, terms_version, terms_agreed_at) VALUES ($1, $2, 1, now()) RETURNING id, username",
     [username, hashPassword(PASSWORD)]
   );
   return rows[0];

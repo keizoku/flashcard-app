@@ -870,6 +870,7 @@ test("UI-26 おためし: 登録せずに試す → 同意して始める → �
   await shot(page, testInfo, "1. 説明の画面。1日で削除されること、作れる量、使えない機能が書いてある");
 
   await page.getByLabel(/すべて削除されることを確かめました/).check();
+  await page.getByLabel(/利用規約を読み、同意します/).check();
   await page.getByRole("button", { name: "おためしを始める" }).click();
   await expect(page).toHaveURL(/\/$/);
   const header = page.locator("header");
@@ -960,7 +961,8 @@ test("UI-28 新規登録: ID とパスワードで登録すると、復旧コー
   await page.locator('input[name="username"]').fill("Hanako_01");
   await page.locator('input[name="password"]').fill("firstpass1");
   await page.locator('input[name="password2"]').fill("firstpass1");
-  await shot(page, testInfo, "1. 新規登録。メールアドレスはいらない");
+  await page.getByLabel(/利用規約を読み、同意します/).check();
+  await shot(page, testInfo, "1. 新規登録。メールアドレスはいらない。利用規約への同意のチェックがある");
   await page.getByRole("button", { name: "登録する" }).click();
 
   const code = page.getByLabel("復旧コード");
@@ -988,4 +990,33 @@ test("UI-28 新規登録: ID とパスワードで登録すると、復旧コー
   await shot(page, testInfo, "4. 作り直すとログインし、新しい復旧コードが出る（前のコードは使えない）");
   await page.getByRole("link", { name: "メモしたので、つづける" }).click();
   await expect(page.locator("header").getByRole("button", { name: "ログアウト" })).toBeVisible();
+});
+
+test("UI-29 利用規約: どの画面の下にもリンクがあり、ログインしなくても読める。まだ同意していない人は、ログインすると同意の画面になり、同意するまでほかの画面は使えない", async ({ page, context }, testInfo) => {
+  await page.goto("/login");
+  await page.locator(".site-footer").getByRole("link", { name: "利用規約" }).click();
+  await expect(page).toHaveURL(/\/terms$/);
+  await expect(page.getByRole("heading", { name: "利用規約" })).toBeVisible();
+  await expect(page.getByText(/責任を負いません/).first()).toBeVisible();
+  await shot(page, testInfo, "1. 利用規約。ログインしていなくても読める");
+
+  const old = await createUser("olduser");
+  await db().query("UPDATE users SET terms_version = NULL, terms_agreed_at = NULL WHERE id = $1", [old.id]);
+  await loginAs(context, old);
+  await page.goto("/stats");
+  await expect(page).toHaveURL(/\/agree$/);
+  await expect(page.getByText("無料の、実験中のサービスです。")).toBeVisible();
+  await shot(page, testInfo, "2. まだ同意していない人は、どの画面を開いても同意の画面になる（大事なところのまとめ）");
+
+  await page.getByRole("button", { name: "同意して使う" }).click();
+  await expect(page).toHaveURL(/\/agree$/); // チェックしないと進めない（ブラウザが止める）
+  await page.getByLabel(/利用規約を読み、同意します/).check();
+  await page.getByRole("button", { name: "同意して使う" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  await page.goto("/stats");
+  await expect(page.getByRole("heading", { name: "統計" })).toBeVisible();
+  const { rows } = await db().query("SELECT terms_version, terms_agreed_at FROM users WHERE id = $1", [old.id]);
+  expect(rows[0].terms_version).toBe(1);
+  expect(rows[0].terms_agreed_at).not.toBeNull();
+  await shot(page, testInfo, "3. 同意すると、ふつうに使える");
 });

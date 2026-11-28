@@ -126,6 +126,7 @@ docker compose run --rm e2e
 | ログインしていない人の転送（middleware） | `unit/middleware.test.js` |
 | テーブル定義書と DB が同じか（[tables](tables.md)） | `db/schema-doc.test.js` |
 | 025（メールアドレスから ID へ）が、今までのユーザーをどう変えるか | `db/migration-025.test.js` |
+| 利用規約と同意（登録・おためし・まだ同意していない人・版が上がったとき） | `db/terms.test.js` |
 | テスト仕様書とテストの ID が同じか（[test-spec](test-spec.md)） | `unit/test-spec.test.js` |
 | 画面の文言に「デッキ」を使わない（「単語帳」と呼ぶ） | `unit/wording.test.js` |
 | 左右のスワイプとタップを ← / → に置きかえる（iPhone・iPad） | `unit/swipe.test.js` |

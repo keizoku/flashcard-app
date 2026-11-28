@@ -20,7 +20,7 @@ describe("セッション", () => {
     expect(rows[0].token_hash).not.toBe(token);
     const days = (rows[0].expires_at - Date.now()) / 86400000;
     expect(days).toBeGreaterThan(29.9);
-    expect(await getCurrentUser()).toEqual({ id: u.id, username: u.username, displayName: null, guestExpiresAt: null });
+    expect(await getCurrentUser()).toEqual({ id: u.id, username: u.username, displayName: null, guestExpiresAt: null, termsVersion: 1 });
   });
 
   test("SS-02 createSession は期限切れのセッションを片付ける", async () => {

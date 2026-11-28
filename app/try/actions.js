@@ -12,6 +12,9 @@ export async function startGuest(prevState, formData) {
   if (formData.get("agree") !== "on") {
     return { error: "1日たつと、作ったものもすべて削除されることを確かめて、チェックを入れてください" };
   }
+  if (formData.get("terms") !== "on") {
+    return { error: "利用規約を読んで、同意のチェックを入れてください" };
+  }
   const r = await createGuest({ ip: clientIp(await headers()) });
   if (r.error) return { error: r.error };
   // すぐ試せるよう、動画の単語帳と物語の単語帳を入れておく（作れなくても、おためしは始める）

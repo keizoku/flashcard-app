@@ -1,4 +1,5 @@
 import { getCurrentUser } from "@/lib/auth";
+import { needsTermsAgreement } from "@/lib/terms";
 import { getSceneImage, saveSceneImage } from "@/lib/scenes";
 
 // 物語の場面の絵。GET で見る、POST（フォームの image）で取り込む。自分の場面だけ
@@ -26,6 +27,7 @@ export async function GET(request, { params }) {
 export async function POST(request, { params }) {
   const user = await getCurrentUser();
   if (!user) return Response.json({ error: "ログインしてください" }, { status: 401 });
+  if (needsTermsAgreement(user)) return Response.json({ error: "利用規約に同意してください" }, { status: 403 });
   const origin = request.headers.get("origin");
   if (origin) {
     let host = null;

@@ -36,7 +36,10 @@ export default function Landing() {
               使い方を見る
             </a>
           </div>
-          <p className="lp-fine">登録は ID とパスワードだけ。メールアドレスはいりません。料金もかかりません。</p>
+          <p className="lp-fine">
+            登録は ID とパスワードだけ。メールアドレスはいりません。料金もかかりません。
+            個人が作っている実験中のサービスです（<Link href="/terms">利用規約</Link>）。
+          </p>
         </div>
         <div className="lp-hero-visual">
           <DemoCard />

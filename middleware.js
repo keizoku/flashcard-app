@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 // ログインしていない人を、ログイン画面へ送る（トップ / はホームページを出すので通す）。
 // ここでは Cookie があるかだけを見る（本当に有効なセッションかは、各画面の requireUser で確かめる）
 const SESSION_COOKIE = "flashcard_session";
-// /try はおためしの説明、/api/cron は期限の過ぎたおためしユーザーを消す処理（Vercel の Cron が呼ぶ）
-const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/try", "/api/cron"];
+// /try はおためしの説明、/terms は利用規約（登録の前に読む）、/api/cron は期限の過ぎたおためしユーザーを消す処理（Vercel の Cron が呼ぶ）
+const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/try", "/terms", "/api/cron"];
 
 export function middleware(request) {
   const { pathname, search } = request.nextUrl;

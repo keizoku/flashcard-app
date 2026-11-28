@@ -11,7 +11,7 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 
 | テーブル | 内容 | 作ったマイグレーション |
 | --- | --- | --- |
-| [users](#users) | ユーザー（おためしユーザーも） | 013（014・019・022・025 で列を変更） |
+| [users](#users) | ユーザー（おためしユーザーも） | 013（014・019・022・025・026 で列を変更） |
 | [user_sessions](#user_sessions) | ログイン中のセッション | 013 |
 | [passkeys](#passkeys) | パスキー（端末の公開鍵） | 021 |
 | [passkey_challenges](#passkey_challenges) | パスキーの登録・ログインの合言葉 | 021 |
@@ -46,6 +46,8 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 | display_name | text | ○ | | 表示名（30文字まで）。公開した単語帳に、作った人として出す。NULL = まだ決めていない |
 | onboarding_dismissed_at | timestamptz | ○ | | トップの「はじめの4ステップ」を「閉じる」で消した日時（019）。NULL = まだ閉じていない |
 | guest_expires_at | timestamptz | ○ | | おためしユーザーの期限（022）。この日時を過ぎたら、アカウントごと削除する。NULL = ふつうのユーザー |
+| terms_version | integer | ○ | | 同意した利用規約の版（026。`lib/terms.js` の `TERMS_VERSION`）。NULL = まだ同意していない（前からのアカウント・管理用の道具で作ったアカウント）。今の版と違えば、同意の画面（/agree）を出す |
+| terms_agreed_at | timestamptz | ○ | | 利用規約に同意した日時（026） |
 
 - 主キー: `id`
 - インデックス: `users_username_idx`（一意、`username`）、`users_guest_expires_idx`（`guest_expires_at`、おためしユーザーだけ）

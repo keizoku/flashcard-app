@@ -65,6 +65,11 @@ sequenceDiagram
 - 期限切れのセッションは、新しいセッションを作るときに片付ける
 - リダイレクト先は `APP_URL` から作る（コンテナの中のホスト名に飛ばないように）
 
+## 利用規約への同意（`lib/terms.js`）
+
+新規登録・おためしを始めるときに、利用規約への同意のチェックを入れてもらい、版と日時を `users` に記録する。
+`requireUser` は、今の版に同意していない人を同意の画面（`/agree`）へ移す（トップも同じ）。くわしくは [features.md](features.md#16-利用規約と同意apptermsappagreelibtermsjs)。
+
 ## 管理者（`lib/admin.js`）
 
 環境変数 `ADMIN_USERNAMES` にログインの ID をカンマ区切りで入れると、その人が管理者になり、管理者の画面（`/admin`、[features.md](features.md#15-管理者の画面appadminlibadminstatsjs)）を開ける。

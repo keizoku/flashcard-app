@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { getComprehensionByDeck } from "@/lib/comprehension";
 import { pool } from "@/lib/db";
 import { getOnboarding } from "@/lib/onboarding";
+import { needsTermsAgreement } from "@/lib/terms";
 import DeckList from "./DeckList";
 import Onboarding from "./Onboarding";
 import Landing from "./landing/Landing";
@@ -18,6 +20,8 @@ export default async function Home({ searchParams }) {
   // ログインしていなければ、ホームページ（アプリの紹介）を出す
   const user = await getCurrentUser();
   if (!user) return <Landing />;
+  // 今の利用規約に同意していなければ、同意の画面へ
+  if (needsTermsAgreement(user)) redirect("/agree");
   const { notice } = await searchParams;
   const { rows: decks } = await pool.query(
     `

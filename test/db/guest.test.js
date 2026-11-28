@@ -36,7 +36,7 @@ const count = async (sql, params = []) => (await pool.query(sql, params)).rows[0
 // 画面の「おためしを始める」を押したのと同じ（接続元の IP を決めて）
 async function start(ip = "203.0.113.1", agree = true) {
   globalThis.testHeaders = { "x-forwarded-for": `${ip}, 10.0.0.1` };
-  return runAction(startGuest({ error: null }, formData(agree ? { agree: "on" } : {})));
+  return runAction(startGuest({ error: null }, formData(agree ? { agree: "on", terms: "on" } : {})));
 }
 
 // おためしユーザーを作って、ログインした状態にする。

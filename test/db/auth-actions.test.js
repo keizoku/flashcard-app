@@ -17,7 +17,8 @@ import { createDeck, createUser, formData, loginAs, PASSWORD, resetDb, runAction
 // 登録・ログイン・パスワード。メールアドレスは使わず、ID とパスワード。忘れたときは復旧コード
 beforeEach(resetDb);
 
-const signupForm = (username, password = "newpassword", password2 = password) => formData({ username, password, password2 });
+const signupForm = (username, password = "newpassword", password2 = password) =>
+  formData({ username, password, password2, terms: "on" });
 const from = (ip) => {
   globalThis.testHeaders = { "x-forwarded-for": ip };
 };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { TermsCheckbox } from "@/app/agree/AgreeForm";
 import { startGuest } from "./actions";
 
 export default function TryForm() {
@@ -11,8 +12,9 @@ export default function TryForm() {
         <input type="checkbox" name="agree" required />
         1日たつと、アカウントも作ったものもすべて削除されることを確かめました
       </label>
+      <TermsCheckbox />
       <button type="submit" disabled={pending}>
-        {pending ? "準備中…" : "おためしを始める"}
+        {pending ? "準備中…" : "同意して、おためしを始める"}
       </button>
       {state.error && (
         <p className="error" role="alert">

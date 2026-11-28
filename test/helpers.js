@@ -1,4 +1,5 @@
 import { pool } from "@/lib/db";
+import { TERMS_VERSION } from "@/lib/terms";
 import { hashToken } from "@/lib/auth";
 
 // テストで使う、データ作り・ログインなどの道具
@@ -26,10 +27,12 @@ async function passwordHash() {
   return cachedHash;
 }
 
-export async function createUser({ username = "user" } = {}) {
+// agreed: 利用規約（今の版）に同意ずみにするか。false なら、まだ同意していない人（前からのアカウントなど）
+export async function createUser({ username = "user", agreed = true } = {}) {
   const { rows } = await pool.query(
-    "INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username",
-    [username, await passwordHash()]
+    `INSERT INTO users (username, password_hash, terms_version, terms_agreed_at)
+     VALUES ($1, $2, $3, CASE WHEN $3::int IS NULL THEN NULL ELSE now() END) RETURNING id, username`,
+    [username, await passwordHash(), agreed ? TERMS_VERSION : null]
   );
   return rows[0];
 }

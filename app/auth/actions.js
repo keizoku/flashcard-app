@@ -54,6 +54,7 @@ export async function signup(prevState, formData) {
   const rule = checkPasswordRule(password);
   if (rule) return { ...keep, error: rule };
   if (password !== String(formData.get("password2") ?? "")) return { ...keep, error: "確認用のパスワードが一致しません" };
+  if (formData.get("terms") !== "on") return { ...keep, error: "利用規約を読んで、同意のチェックを入れてください" };
 
   const r = await createAccount({ username, password, headers: await headers() });
   if (r.error) return { ...keep, error: r.error };

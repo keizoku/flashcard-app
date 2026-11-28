@@ -6,7 +6,7 @@ const req = (path, cookie) =>
   new NextRequest(`http://localhost:3000${path}`, cookie ? { headers: { cookie: `flashcard_session=${cookie}` } } : {});
 
 test("MW-01 ログイン不要の画面はそのまま通す", () => {
-  for (const p of ["/login", "/signup", "/forgot-password"]) {
+  for (const p of ["/login", "/signup", "/forgot-password", "/terms"]) {
     expect(middleware(req(p)).headers.get("location")).toBeNull();
   }
 });

@@ -84,7 +84,7 @@ const setCreated = (userId, daysAgo) => pool.query(`UPDATE users SET created_at 
 
 async function makeGuest(ip = "203.0.113.9") {
   globalThis.testHeaders = { "x-forwarded-for": ip };
-  const { redirectTo } = await runAction(startGuest({ error: null }, formData({ agree: "on" })));
+  const { redirectTo } = await runAction(startGuest({ error: null }, formData({ agree: "on", terms: "on" })));
   expect(redirectTo).toBe("/");
   return getCurrentUser();
 }

@@ -54,6 +54,8 @@ app/                 画面（Next.js App Router）
   auth/              ログイン・登録などの Server Action とフォーム
   login/ signup/ forgot-password/ account/   ログイン・登録・パスワードを忘れたとき（復旧コード）・アカウント
   try/               登録せずに試す（おためしユーザーを作る・終える）
+  terms/             利用規約（ログインしなくても読める）
+  agree/             利用規約への同意（まだ同意していない人は、ほかの画面を開くとここへ）
   decks/[id]/        単語帳画面（カード一覧、解説の取り込み、動画プレーヤー、物語の通し読み・スライド）
     import/          字幕の解析と、候補の文からカードを登録
     study/           記憶テスト
@@ -130,6 +132,7 @@ sequenceDiagram
 | `appUrl.js` | このアプリの URL（`APP_URL`、なければ Vercel の本番の URL、なければ localhost）。画面の部品からも使う | |
 | `passkeys.js` | パスキーの登録・ログイン・一覧・削除（`@simplewebauthn/server`） | ○ |
 | `guest.js` | おためしユーザー（作る・削除する・始められる回数と作れる量の制限・使えない機能） | ○ |
+| `terms.js` | 利用規約の版（`TERMS_VERSION`）と日付、同意が必要か（`needsTermsAgreement`） | |
 | `starterDeck.js` | おためしユーザーに最初から入れる単語帳（動画の単語帳の書き出し・物語）を入れる | ○ |
 | `sampleVideos.js` | おためしユーザーに出す、サンプルの動画（URL・題名・長さ）。画面の部品からも使う | |
 | `transcript.js` | 字幕を区間・文に分け、知らない語を数えて段階に分ける | |
