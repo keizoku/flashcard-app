@@ -12,7 +12,7 @@ export default function DisplayNameForm({ initialName, maxLength }) {
         表示名
         <input name="displayName" defaultValue={initialName ?? ""} maxLength={maxLength} placeholder="例: たろう" />
       </label>
-      <p className="note small">公開した単語帳に、作った人として出ます（メールアドレスはほかの人には見えません）。</p>
+      <p className="note small">公開した単語帳に、作った人として出ます（ログインの ID は、ほかの人には見えません）。</p>
       {state.error && (
         <p className="error" role="alert">
           {state.error}

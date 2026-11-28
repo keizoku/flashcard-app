@@ -4,8 +4,7 @@ import "./landing.css";
 
 // ホームページ（ログインしていない人がトップを開いたときに出す）。
 // アプリでできることだけを書く（数字や利用者の声などは作らない）。
-// inviteOnly: 使える人を決めている（ALLOWED_EMAILS）とき。「無料で始める」を出さず、決まった人だけと伝える
-export default function Landing({ inviteOnly = false }) {
+export default function Landing() {
   return (
     <main className="lp">
       {/* はじめの画面 */}
@@ -27,15 +26,9 @@ export default function Landing({ inviteOnly = false }) {
             難しすぎない。簡単すぎない。だから、続きます。
           </p>
           <div className="lp-cta-row">
-            {inviteOnly ? (
-              <Link href="/login" className="lp-button lp-primary">
-                ログイン
-              </Link>
-            ) : (
-              <Link href="/signup" className="lp-button lp-primary">
-                無料で始める
-              </Link>
-            )}
+            <Link href="/signup" className="lp-button lp-primary">
+              無料で始める
+            </Link>
             <Link href="/try" className="lp-button lp-ghost">
               登録せずに試す（1日）
             </Link>
@@ -43,7 +36,7 @@ export default function Landing({ inviteOnly = false }) {
               使い方を見る
             </a>
           </div>
-          <p className="lp-fine">{inviteOnly ? INVITE_ONLY_NOTE : "登録はメールアドレスだけ。料金はかかりません。"}</p>
+          <p className="lp-fine">登録は ID とパスワードだけ。メールアドレスはいりません。料金もかかりません。</p>
         </div>
         <div className="lp-hero-visual">
           <DemoCard />
@@ -234,14 +227,12 @@ export default function Landing({ inviteOnly = false }) {
       {/* 最後の呼びかけ */}
       <section className="lp-final">
         <h2>次に見る動画から、始めよう。</h2>
-        <p>{inviteOnly ? INVITE_ONLY_NOTE : "登録は 1 分。最初の 1 枚を作るまで、5 分もかかりません。"}</p>
+        <p>登録は 1 分。最初の 1 枚を作るまで、5 分もかかりません。</p>
         <div className="lp-cta-row lp-center">
-          {!inviteOnly && (
-            <Link href="/signup" className="lp-button lp-primary">
-              無料で始める
-            </Link>
-          )}
-          <Link href="/login" className={`lp-button ${inviteOnly ? "lp-primary" : "lp-ghost"}`}>
+          <Link href="/signup" className="lp-button lp-primary">
+            無料で始める
+          </Link>
+          <Link href="/login" className="lp-button lp-ghost">
             ログイン
           </Link>
           <Link href="/try" className="lp-button lp-ghost">
@@ -252,8 +243,6 @@ export default function Landing({ inviteOnly = false }) {
     </main>
   );
 }
-
-const INVITE_ONLY_NOTE = "今は、決まった人だけが使えます。新しい登録は受け付けていませんが、「登録せずに試す」で1日だけ試せます。";
 
 function Feature({ title, icon, children }) {
   return (

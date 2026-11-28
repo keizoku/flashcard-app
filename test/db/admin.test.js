@@ -10,7 +10,7 @@ import { pool } from "@/lib/db";
 import { createCard, createDeck, createUser, formData, loginAs, logoutCookie, resetDb, runAction } from "../helpers.js";
 
 // 管理者の画面（/admin）。ユーザーの数と、どのくらい使われているかを、全体の数と日ごとの推移で見る。
-// 管理者は環境変数 ADMIN_EMAILS（カンマ区切り）で決める
+// 管理者は環境変数 ADMIN_USERNAMES（ログインの ID、カンマ区切り）で決める
 
 function textOf(node) {
   if (node == null || typeof node === "boolean") return "";
@@ -93,24 +93,23 @@ let admin;
 let other;
 beforeEach(async () => {
   await resetDb();
-  delete process.env.ALLOWED_EMAILS;
-  process.env.ADMIN_EMAILS = "Admin@Example.com, boss@example.com";
-  admin = await createUser({ email: "admin@example.com" });
-  other = await createUser({ email: "other@example.com" });
+  process.env.ADMIN_USERNAMES = "Admin, boss";
+  admin = await createUser({ username: "admin" });
+  other = await createUser({ username: "other" });
 });
 afterEach(() => {
-  delete process.env.ADMIN_EMAILS;
+  delete process.env.ADMIN_USERNAMES;
 });
 
 describe("管理者かどうか", () => {
-  test("AD-01 ADMIN_EMAILS にあるアドレスの人だけが管理者（大文字・小文字は同じとみなす）。空なら、だれも管理者でない。おためしユーザーは管理者にしない", () => {
-    expect(isAdmin({ email: "admin@example.com", guestExpiresAt: null })).toBe(true);
-    expect(isAdmin({ email: "BOSS@example.com", guestExpiresAt: null })).toBe(true);
-    expect(isAdmin({ email: "other@example.com", guestExpiresAt: null })).toBe(false);
-    expect(isAdmin({ email: "admin@example.com", guestExpiresAt: new Date() })).toBe(false);
+  test("AD-01 ADMIN_USERNAMES にある ID の人だけが管理者（大文字・小文字は同じとみなす）。空なら、だれも管理者でない。おためしユーザーは管理者にしない", () => {
+    expect(isAdmin({ username: "admin", guestExpiresAt: null })).toBe(true);
+    expect(isAdmin({ username: "BOSS", guestExpiresAt: null })).toBe(true);
+    expect(isAdmin({ username: "other", guestExpiresAt: null })).toBe(false);
+    expect(isAdmin({ username: "admin", guestExpiresAt: new Date() })).toBe(false);
     expect(isAdmin(null)).toBe(false);
-    process.env.ADMIN_EMAILS = "";
-    expect(isAdmin({ email: "admin@example.com", guestExpiresAt: null })).toBe(false);
+    process.env.ADMIN_USERNAMES = "";
+    expect(isAdmin({ username: "admin", guestExpiresAt: null })).toBe(false);
   });
 });
 
@@ -121,14 +120,13 @@ describe("管理者の画面", () => {
     expect(await isNotFound(AdminPage())).toBe(true);
   });
 
-  test("AD-03 管理者が開くと、全体の数と日ごとの推移を出す。数だけを出し、ユーザーのメールアドレスは出さない", async () => {
+  test("AD-03 管理者が開くと、全体の数と日ごとの推移を出す。数だけを出し、ユーザーの ID は出さない", async () => {
     await loginAs(admin);
     const page = await AdminPage();
     const text = textOf(page);
     expect(text).toContain("全体の数");
     expect(text).toContain("日ごとの推移");
-    expect(text).not.toContain("other@example.com");
-    expect(text).not.toContain("admin@example.com");
+    expect(text).not.toContain("other");
   });
 
   test("AD-04 ヘッダーの「管理」のリンクは、管理者にだけ出す", async () => {
@@ -141,25 +139,24 @@ describe("管理者の画面", () => {
 });
 
 describe("全体の数", () => {
-  test("AD-05 登録ユーザー（確認済み）・確認待ち・いまのおためしユーザー・最近登録した人を数える。おためしユーザーは登録ユーザーに数えない", async () => {
-    await createUser({ email: "pending@example.com", verified: false });
-    const old = await createUser({ email: "old@example.com" });
+  test("AD-05 登録ユーザー・いまのおためしユーザー・最近登録した人を数える。おためしユーザーは登録ユーザーに数えない", async () => {
+    const old = await createUser({ username: "old" });
     await setCreated(old.id, 40);
-    const week = await createUser({ email: "week@example.com" });
+    const week = await createUser({ username: "week" });
     await setCreated(week.id, 3);
     await makeGuest();
 
     const s = await getAdminSummary();
-    expect(s.users).toEqual({ registered: 4, unverified: 1, new7: 3, new30: 3 });
+    expect(s.users).toEqual({ registered: 4, new7: 3, new30: 3 });
     expect(s.guests.active).toBe(1);
     expect(s.guests.startsToday).toBe(1);
     expect(s.guests.starts30).toBe(1);
   });
 
   test("AD-06 使った人は、記憶テストに答えた・勉強時間がある・カードか単語帳を作った登録ユーザーを、1人1回で数える（今日・7日・30日）", async () => {
-    const a = await createUser({ email: "a@example.com" });
-    const b = await createUser({ email: "b@example.com" });
-    const c = await createUser({ email: "c@example.com" });
+    const a = await createUser({ username: "a" });
+    const b = await createUser({ username: "b" });
+    const c = await createUser({ username: "c" });
     // a: 今日、答えて勉強もした（1人と数える）
     const deckA = await createDeck(a.id);
     const cardA = await createCard(deckA);

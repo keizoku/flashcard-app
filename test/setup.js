@@ -3,13 +3,12 @@ import { testDatabaseUrl } from "./dbUrl.js";
 
 // 各テストファイルの前に実行する。
 // - lib/db.js がテスト用 DB につなぐよう、DATABASE_URL を差し替える
-// - Next.js の Cookie・画面遷移・キャッシュ、メール送信、YouTube への通信を、テスト用の偽物にする
+// - Next.js の Cookie・画面遷移・キャッシュ、YouTube への通信を、テスト用の偽物にする
 // （vi.mock はファイルの先頭に移されるので、中では globalThis 経由で値を共有する）
 process.env.DATABASE_URL = testDatabaseUrl();
 process.env.APP_URL = "http://localhost:3000";
-// 手元で使える人を決めていても（.env の ALLOWED_EMAILS）、テストはだれでも使える状態で始める。
-// 決めたときの動きは、そのテストの中で設定して確かめる（allowlist.test.js など）
-delete process.env.ALLOWED_EMAILS;
+// 手元で管理者を決めていても（.env の ADMIN_USERNAMES）、テストは決めていない状態で始める
+delete process.env.ADMIN_USERNAMES;
 delete globalThis.pgPool;
 
 // Cookie（ブラウザの代わりに、ここに保存する）
@@ -45,15 +44,6 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("next/cache", () => ({ revalidatePath: () => {}, revalidateTag: () => {} }));
 
-// メールは送らずに、送った内容を覚えておく
-globalThis.sentMails = [];
-vi.mock("@/lib/mail", () => ({
-  appUrl: (p = "/") => new URL(p, process.env.APP_URL).toString(),
-  sendMail: async (mail) => {
-    globalThis.sentMails.push(mail);
-    return true;
-  },
-}));
 
 // YouTube には問い合わせない
 vi.mock("@/lib/videoTitle", () => ({

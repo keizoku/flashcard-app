@@ -9,7 +9,7 @@ export const metadata = { title: "管理 | フラッシュカード" };
 const DAYS = 30;
 
 // 管理者の画面。ユーザーの数と、どのくらい使われているかを、数だけで出す（だれのデータかは出さない）。
-// 管理者は環境変数 ADMIN_EMAILS で決める（lib/admin.js）
+// 管理者は環境変数 ADMIN_USERNAMES（ログインの ID）で決める（lib/admin.js）
 export default async function AdminPage() {
   await requireAdmin();
   const [s, days] = await Promise.all([getAdminSummary(), getAdminDaily({ days: DAYS })]);
@@ -18,7 +18,7 @@ export default async function AdminPage() {
     {
       title: "ユーザー",
       tiles: [
-        { label: "登録ユーザー", value: s.users.registered, sub: `確認待ち ${s.users.unverified}人` },
+        { label: "登録ユーザー", value: s.users.registered },
         { label: "この7日に登録", value: s.users.new7 },
         { label: "この30日に登録", value: s.users.new30 },
         { label: "いまのおためし", value: s.guests.active, sub: `開始 今日${s.guests.startsToday}・30日${s.guests.starts30}` },

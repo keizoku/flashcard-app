@@ -18,3 +18,22 @@ export function ask(question, { hidden = false } = {}) {
     });
   });
 }
+
+// つなぐ DB の接続の文字列を聞いて、つなぐ（文字列は画面に出さない）。つなげなければ終わる。
+// 手元の Docker の DB なら postgres://flashcard:flashcard@db:5432/flashcard を入れる
+export async function connectDb() {
+  const { default: pg } = await import("pg");
+  const url = await ask("つなぐ DB の接続の文字列（Neon の Connect でコピー。画面には出ません）: ", { hidden: true });
+  if (!/^postgres(ql)?:\/\//.test(url)) {
+    console.log("接続の文字列は postgresql:// で始まります。やり直してください。");
+    process.exit(1);
+  }
+  const client = new pg.Client({ connectionString: url });
+  try {
+    await client.connect();
+  } catch (err) {
+    console.log(`DB につなげませんでした: ${err.message}`);
+    process.exit(1);
+  }
+  return client;
+}

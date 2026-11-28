@@ -20,7 +20,7 @@ describe("セッション", () => {
     expect(rows[0].token_hash).not.toBe(token);
     const days = (rows[0].expires_at - Date.now()) / 86400000;
     expect(days).toBeGreaterThan(29.9);
-    expect(await getCurrentUser()).toEqual({ id: u.id, email: u.email, displayName: null, guestExpiresAt: null });
+    expect(await getCurrentUser()).toEqual({ id: u.id, username: u.username, displayName: null, guestExpiresAt: null });
   });
 
   test("SS-02 createSession は期限切れのセッションを片付ける", async () => {
@@ -30,7 +30,7 @@ describe("セッション", () => {
     expect(await sessionCount(u.id)).toBe(1);
   });
 
-  test("SS-03 Cookie がない・知らないトークン・期限切れ・未確認のユーザーは null", async () => {
+  test("SS-03 Cookie がない・知らないトークン・期限切れは null", async () => {
     expect(await getCurrentUser()).toBeNull();
     globalThis.testCookies.set("flashcard_session", "unknown");
     expect(await getCurrentUser()).toBeNull();
@@ -40,9 +40,6 @@ describe("セッション", () => {
     await pool.query("INSERT INTO user_sessions (token_hash, user_id, expires_at) VALUES ($1, $2, now() - interval '1 second')", [hashToken("expired"), u.id]);
     expect(await getCurrentUser()).toBeNull();
 
-    const unverified = await createUser({ email: "new@example.com", verified: false });
-    await loginAs(unverified);
-    expect(await getCurrentUser()).toBeNull();
   });
 
   test("SS-04 requireUser はログインしていなければ /login へ", async () => {
@@ -74,8 +71,8 @@ describe("セッション", () => {
 
 describe("持ち主の確認", () => {
   test("SS-07 ownsDeck / ownsCard は自分のものだけ true", async () => {
-    const a = await createUser({ email: "a@example.com" });
-    const b = await createUser({ email: "b@example.com" });
+    const a = await createUser({ username: "a" });
+    const b = await createUser({ username: "b" });
     const deck = await createDeck(a.id);
     const card = await createCard(deck);
     expect(await ownsDeck(a.id, deck)).toBe(true);

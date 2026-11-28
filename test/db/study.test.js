@@ -70,7 +70,7 @@ describe("recordReview（覚えている / 覚えていない）", () => {
   });
 
   test("ST-06 他人のカード・でたらめな ID は記録できない", async () => {
-    const other = await createUser({ email: "other@example.com" });
+    const other = await createUser({ username: "other" });
     const theirs = await createCard(await createDeck(other.id));
     expect(await recordReview(theirs, true)).toEqual({ error: "カードが見つかりません" });
     expect(await recordReview("abc", true)).toEqual({ error: "カードが見つかりません" });
@@ -105,7 +105,7 @@ describe("undoReview（前のカードに戻って答え直す）", () => {
   test("ST-09 他人の記録は取り消せない", async () => {
     const card = await createCard(deck);
     const { logId } = await recordReview(card, true);
-    const other = await createUser({ email: "other@example.com" });
+    const other = await createUser({ username: "other" });
     await loginAs(other);
     expect(await undoReview(logId)).toEqual({ error: "この答えは取り消せません" });
   });

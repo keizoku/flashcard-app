@@ -11,36 +11,30 @@
 ```mermaid
 flowchart LR
   B[ブラウザ] -- http://localhost:3000 --> APP
-  B -- http://localhost:8025 --> MP
   B -. "http://localhost:3100（npm run test:ui のときだけ）" .-> APP
   subgraph docker compose
     APP["app<br/>Node.js 22 + Next.js 15<br/>(npm run dev)"]
     DB[("db<br/>PostgreSQL 17")]
-    MP["mailpit<br/>開発用の受信箱"]
   end
   APP -- pg --> DB
-  APP -- SMTP 1025 --> MP
   APP -. "oEmbed（動画タイトル）" .-> YT[(YouTube)]
-  APP -. ".env に SMTP を書いたとき" .-> SMTP[(本物の SMTP)]
 ```
 
 | サービス | 役割 | 備考 |
 | --- | --- | --- |
 | `app` | 画面とサーバー処理（Next.js） | ソースは bind mount。`node_modules` と `.next` はコンテナ内のもの。テスト実行ツール（3100、このパソコンからだけ）もここで動かす |
 | `db` | PostgreSQL 17 | データは volume `db_data` |
-| `mailpit` | 送ったメールを受け取る開発用の受信箱 | 外には送らない |
 | `e2e` | 画面のテスト（Playwright + Chromium）とテスト結果レポート | ふだんは起動しない（profile `e2e`）。`docker compose run --rm e2e` のときだけ。中でテスト用の DB（`flashcard_e2e`）につないだアプリを 3200 で動かす（外には出さない）。`node_modules` は volume `e2e_node_modules` |
 
 - Mac に Node.js は入れない。`npm` はすべてコンテナの中で動かす（`docker compose exec app ...`）
 - 起動時（`npm run dev`）に `scripts/migrate.mjs` が、まだ当てていない `db/migrations/*.sql` を番号順に当てる
-- 環境変数は `compose.yaml`。メールの送り先などは `.env`（git に入れない。例は `.env.example`）
+- 環境変数は `compose.yaml`。管理者の ID などは `.env`（git に入れない。例は `.env.example`）
 
 | 環境変数 | 用途 | 既定値 |
 | --- | --- | --- |
 | `DATABASE_URL` | DB の接続先 | `postgres://flashcard:flashcard@db:5432/flashcard` |
-| `APP_URL` | メールのリンク・リダイレクト先の URL。`https:` なら Cookie に Secure を付ける | `http://localhost:3000` |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` / `SMTP_USER` / `SMTP_PASS` | メールの送信先 | Mailpit |
-| `MAIL_FROM` | 差出人 | `フラッシュカード <no-reply@flashcard.local>` |
+| `APP_URL` | リダイレクト先の URL・パスキーのドメイン。`https:` なら Cookie に Secure を付ける | `http://localhost:3000` |
+| `ADMIN_USERNAMES` | 管理者の画面（`/admin`）を見られる人のログインの ID（カンマ区切り） | 空（だれも見られない） |
 
 ## インターネットに公開するとき（Vercel ＋ Neon）
 
@@ -58,7 +52,7 @@ app/                 画面（Next.js App Router）
   page.js            トップ: 単語帳の一覧（タグで絞り込み、理解度）
   actions.js         単語帳の作成・削除、カードの追加
   auth/              ログイン・登録などの Server Action とフォーム
-  login/ signup/ verify/ resend/ forgot-password/ reset-password/ account/
+  login/ signup/ forgot-password/ account/   ログイン・登録・パスワードを忘れたとき（復旧コード）・アカウント
   try/               登録せずに試す（おためしユーザーを作る・終える）
   decks/[id]/        単語帳画面（カード一覧、解説の取り込み、動画プレーヤー、物語の通し読み・スライド）
     import/          字幕の解析と、候補の文からカードを登録
@@ -68,7 +62,7 @@ app/                 画面（Next.js App Router）
   stories/new/       覚えた語で物語を作る
   settings/          レベル設定、「知ってる」の語、読み上げの設定
   stats/             統計（勉強時間と、手で時間を足すフォームも）
-  admin/             管理者の画面（ユーザーの数・使われ方の集計。ADMIN_EMAILS の人だけ）
+  admin/             管理者の画面（ユーザーの数・使われ方の集計。ADMIN_USERNAMES の人だけ）
   api/study-time/    画面から勉強時間を受け取る（POST。sendBeacon で送ってくる）
   api/scenes/[id]/image/  物語の場面の絵を見る（GET）・取り込む（POST）。自分の場面だけ
   api/cron/cleanup-guests/  期限の過ぎたおためしユーザーを削除する（GET。Vercel の Cron が1日1回呼ぶ）
@@ -90,7 +84,7 @@ docs/                設計書
 ## 処理の流れ
 
 画面は Server Component で DB を直接読み、変更は Server Action（`"use server"` の関数）で行う。API のエンドポイントは
-`/verify`（確認メールのリンク）だけ。
+`app/api/` の3つだけ（勉強時間の記録 `study-time`、場面の絵 `scenes/[id]/image`、期限の過ぎたおためしユーザーを消す `cron/cleanup-guests`）。
 
 ```mermaid
 sequenceDiagram
@@ -127,14 +121,12 @@ sequenceDiagram
 | `auth.js` | セッション、`getCurrentUser` / `requireUser`、持ち主の確認 | ○ |
 | `uiPrefs.js` | 画面の小さな好み（説明を閉じたか）を覚える Cookie の名前。画面の部品からも使う | |
 | `onboarding.js` | トップの「はじめの4ステップ」（終わったかの判定・閉じる） | ○ |
-| `userAdmin.js` | メールなしでアカウントを作る・パスワードを作り直す・データを消して最初の状態に戻す（`scripts/create-user.mjs` / `reset-user.mjs` から使う） | |
-| `passwordHash.js` / `emailAddress.js` | パスワードの決まりとハッシュ / メールアドレスの整え方。Next.js の外の道具からも使うので `password.js` / `accounts.js` から分けてある | |
-| `allowlist.js` | 使える人をメールアドレスで決める（環境変数 `ALLOWED_EMAILS`。空ならだれでも） | |
-| `admin.js` | 管理者をメールアドレスで決める（環境変数 `ADMIN_EMAILS`。空ならだれも管理者でない）、`requireAdmin` | |
+| `userAdmin.js` | アカウントを作る・パスワードを作り直す・ID を変える・アカウントの一覧・データを消して最初の状態に戻す（`scripts/create-user.mjs` / `rename-user.mjs` / `reset-user.mjs` から使う） | |
+| `passwordHash.js` / `username.js` / `recovery.js` | パスワードの決まりとハッシュ / ID の決まり / 復旧コードを作る・ハッシュにする。Next.js の外の道具からも使うので、server-only にしない | |
+| `admin.js` | 管理者をログインの ID で決める（環境変数 `ADMIN_USERNAMES`。空ならだれも管理者でない）、`requireAdmin` | |
 | `adminStats.js` | 管理者の画面の集計（全体の数・日ごとの推移）。数だけを返す | ○ |
-| `accounts.js` | メールのリンク（確認・再設定）、登録の完了、メールの文面 | ○ |
+| `accounts.js` | 登録（ID の重複・登録の回数の制限・以前のデータの引き継ぎ）、ID で探す、復旧コードを新しくする | ○ |
 | `password.js` | パスワードのハッシュ（scrypt） | |
-| `mail.js` | メール送信（nodemailer）、`appUrl` | |
 | `appUrl.js` | このアプリの URL（`APP_URL`、なければ Vercel の本番の URL、なければ localhost）。画面の部品からも使う | |
 | `passkeys.js` | パスキーの登録・ログイン・一覧・削除（`@simplewebauthn/server`） | ○ |
 | `guest.js` | おためしユーザー（作る・削除する・始められる回数と作れる量の制限・使えない機能） | ○ |
@@ -169,6 +161,5 @@ sequenceDiagram
 | --- | --- | --- |
 | YouTube oEmbed | 単語帳の名前が空のとき、動画タイトルを取る（API キー不要、5秒で打ち切り） | タイトルなし（手で入力） |
 | YouTube の埋め込み（youtube-nocookie.com） | 単語帳の画面などで、カードの場面から動画を再生する | — |
-| SMTP | 登録・再設定のメール | 「メールを送れませんでした」と表示 |
 | チャット AI | アプリからは呼ばない。ユーザーがプロンプトをコピーし、答えを貼り付ける | — |
 | Web Speech API | ブラウザの読み上げ（声と速さは localStorage に保存） | ボタンを出さない |

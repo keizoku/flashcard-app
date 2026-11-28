@@ -38,8 +38,8 @@ async function createStory(userId, n) {
 }
 beforeEach(async () => {
   await resetDb();
-  me = await createUser({ email: "me@example.com" });
-  other = await createUser({ email: "other@example.com" });
+  me = await createUser({ username: "me" });
+  other = await createUser({ username: "other" });
   story = await createStory(me.id, 9);
   theirStory = await createStory(other.id, 4);
   fetchGeneratedImage.mockReset();

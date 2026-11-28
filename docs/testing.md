@@ -29,7 +29,7 @@ git config core.hooksPath .githooks
 | `vitest.config.mjs` | `@/` の別名、`server-only` を空にする、テストファイルを1つずつ順に実行する |
 | `test/globalSetup.js` | 最初に1回: テスト用 DB `flashcard_unittest` を作り直し、`db/migrations` を最初から当てる |
 | `test/dbUrl.js` | テスト用 DB の接続先。名前が `_test` / `_unittest` で終わらなければ止まる（開発の DB を消さないため） |
-| `test/setup.js` | 各ファイルの前に: DB の接続先を差し替え、Next.js の部品などを偽物にする（下の表）。手元の `.env` で使える人を決めていても（`ALLOWED_EMAILS`）、消して、だれでも使える状態で始める（画面のテストも `compose.yaml` で空にする） |
+| `test/setup.js` | 各ファイルの前に: DB の接続先を差し替え、Next.js の部品などを偽物にする（下の表）。手元の `.env` で管理者を決めていても（`ADMIN_USERNAMES`）、消して、だれも管理者でない状態で始める |
 | `test/helpers.js` | `resetDb`（全テーブルを空に）、`createUser`、`loginAs`、`createDeck`、`createCard`、`runAction` など |
 | `test/unit/` | DB を使わないテスト |
 | `test/db/` | DB を使うテスト（各テストの前に `resetDb`） |
@@ -41,14 +41,13 @@ git config core.hooksPath .githooks
 | `next/headers` の `cookies()` | `globalThis.testCookies`（Map）に読み書き |
 | `next/navigation` の `redirect()` | 例外を投げる。`runAction(...)` で `redirectTo` を取り出せる |
 | `next/cache` の `revalidatePath` | 何もしない |
-| `lib/mail.js` の `sendMail` | 送らずに `globalThis.sentMails` に貯める（`linkIn(mail)` でリンクを取り出せる） |
 | `lib/videoTitle.js` | YouTube に問い合わせず `Video <id>` を返す |
 | `next/navigation` の `notFound()` | 例外（`err.notFound = true`）を投げる |
 
 画面（`app/` の `.js`）は JSX なので、`vitest.config.mjs` の `appJsx` が JSX として読む。画面のテストでは、
 画面の関数を呼んで返ってきた JSX の、文字や部品に渡した props を調べる（見た目や操作は確かめない）。
 
-開発用の DB（`flashcard`）には触らない。Mailpit にもメールは届かない。
+開発用の DB（`flashcard`）には触らない。
 
 ## ブラウザで1件ずつ実行する（テスト実行ツール）
 
@@ -123,9 +122,10 @@ docker compose run --rm e2e
 | 記憶テスト・取り消し（[features 4](features.md#4-記憶テスト)） | `db/study.test.js` |
 | 物語の単語帳（[features 6](features.md)） | `db/tags-story.test.js` |
 | パスワードのハッシュ（[auth](auth.md)） | `unit/password.test.js` |
-| メールアドレスの正規化・トークン | `unit/accounts-email.test.js`、`unit/auth-token.test.js` |
+| ID の決まり・復旧コード・トークン | `unit/username-recovery.test.js`、`unit/auth-token.test.js` |
 | ログインしていない人の転送（middleware） | `unit/middleware.test.js` |
 | テーブル定義書と DB が同じか（[tables](tables.md)） | `db/schema-doc.test.js` |
+| 025（メールアドレスから ID へ）が、今までのユーザーをどう変えるか | `db/migration-025.test.js` |
 | テスト仕様書とテストの ID が同じか（[test-spec](test-spec.md)） | `unit/test-spec.test.js` |
 | 画面の文言に「デッキ」を使わない（「単語帳」と呼ぶ） | `unit/wording.test.js` |
 | 左右のスワイプとタップを ← / → に置きかえる（iPhone・iPad） | `unit/swipe.test.js` |
@@ -137,12 +137,12 @@ docker compose run --rm e2e
 | 単語帳の共有（表示名・公開・みんなの単語帳・取り込み、[features 10](features.md#10-単語帳の共有libsharingjsappshared)） | `db/sharing.test.js` |
 | 画面の操作（ログイン・ヘッダー・他人の単語帳・学習のキーボードとスワイプ・取り込み・統計・トップ・単語帳の共有・ホームページ） | `../e2e/app.spec.mjs`（画面のテスト） |
 | セッション・持ち主の確認 | `db/session.test.js` |
-| メールのリンク・登録の完了・以前のデータの引き継ぎ | `db/accounts.test.js` |
-| 登録・ログイン・ログアウト・再送・再設定・パスワードの変更 | `db/auth-actions.test.js` |
+| 登録・ログイン・ログアウト・復旧コードでパスワードを作り直す・パスワードの変更・復旧コードの作り直し | `db/auth-actions.test.js` |
+| 管理用の道具（アカウントを作る・ID を変える・最初の状態に戻す） | `db/user-admin.test.js` |
 
 ## テストしていないもの
 
 - 画面のテスト（UI-01〜09）にない操作（学習の ← と ↑、読み上げ、取り込みの段階の切り替えなど）。変えたときは、ブラウザで確かめる
 - 統計の画面の細かい数（単語帳別の内訳・グラフ・苦手な語の順）。覚え具合の数は UI-05 で確かめている
-- 本物の SMTP・YouTube への通信
+- YouTube への通信
 - セットアップのスクリプト（`setup.sh` / `setup.ps1`）。変えたときは実際に動かして確かめる（Windows 版は Windows で）

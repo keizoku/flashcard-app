@@ -12,8 +12,8 @@ let me;
 let other;
 beforeEach(async () => {
   await resetDb();
-  me = await createUser({ email: "me@example.com" });
-  other = await createUser({ email: "other@example.com" });
+  me = await createUser({ username: "me" });
+  other = await createUser({ username: "other" });
   await loginAs(me);
 });
 

@@ -1,7 +1,8 @@
-import { ChangePasswordForm } from "@/app/auth/AuthForms";
+import { ChangePasswordForm, RegenerateRecoveryForm } from "@/app/auth/AuthForms";
 import { logout } from "@/app/auth/actions";
 import { PasskeyManager } from "@/app/auth/PasskeyButtons";
 import { requireUser } from "@/lib/auth";
+import { pool } from "@/lib/db";
 import { GUEST_LIMITS, guestHoursLeft } from "@/lib/guest";
 import EndGuestButton from "@/app/try/EndGuestButton";
 import { listPasskeys, MAX_PASSKEY_NAME_LENGTH } from "@/lib/passkeys";
@@ -16,18 +17,30 @@ export default async function AccountPage() {
   if (user.guestExpiresAt) return <GuestAccount expiresAt={user.guestExpiresAt} />;
   const displayName = await getDisplayName(user.id);
   const passkeys = await listPasskeys(user.id);
+  const { rows } = await pool.query("SELECT recovery_code_hash IS NOT NULL AS has FROM users WHERE id = $1", [user.id]);
+  const hasRecoveryCode = rows[0]?.has ?? false;
   return (
     <main className="auth-page">
       <h1>アカウント</h1>
       <p className="note">
-        ログイン中: <strong>{user.email}</strong>
+        ログイン中の ID: <strong>{user.username}</strong>
       </p>
+      {!hasRecoveryCode && (
+        <p className="error" role="note">
+          復旧コードがまだありません。パスワードを忘れたときに戻れるよう、下の「復旧コード」で作ってください。
+        </p>
+      )}
       <h2>表示名</h2>
       <DisplayNameForm initialName={displayName} maxLength={MAX_DISPLAY_NAME_LENGTH} />
       <h2>パスキー</h2>
       <PasskeyManager passkeys={passkeys} maxNameLength={MAX_PASSKEY_NAME_LENGTH} />
       <h2>パスワードを変更</h2>
       <ChangePasswordForm />
+      <h2>復旧コード</h2>
+      <p className="note small">
+        パスワードを忘れたときに、パスワードを作り直すためのコードです。なくしたときは、ここで作り直します（前のコードは使えなくなります）。
+      </p>
+      <RegenerateRecoveryForm />
       <h2>ログアウト</h2>
       <form action={logout}>
         <button type="submit" className="secondary-button">

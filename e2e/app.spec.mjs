@@ -20,8 +20,8 @@ let me;
 let other;
 test.beforeEach(async () => {
   await resetDb();
-  me = await createUser("me@example.com");
-  other = await createUser("other@example.com");
+  me = await createUser("me");
+  other = await createUser("other");
 });
 test.afterAll(closeDb);
 
@@ -33,17 +33,17 @@ test("UI-01 ログインしていないと、ログイン画面へ。ログイ�
   await expect(header.getByRole("link", { name: "新規登録" })).toBeVisible();
   await shot(page, testInfo, "1. ログインしていないので、ログイン画面に移った");
 
-  await page.getByLabel("メールアドレス").fill("me@example.com");
+  await page.getByLabel("ID", { exact: true }).fill("me");
   await page.locator('input[name="password"]').fill(PASSWORD);
-  await shot(page, testInfo, "2. メールアドレスとパスワードを入れた");
+  await shot(page, testInfo, "2. ID とパスワードを入れた");
   await page.getByRole("button", { name: "ログイン", exact: true }).click();
 
   await expect(page).toHaveURL(/\/stats$/);
   await expect(page.getByRole("heading", { name: "統計" })).toBeVisible();
   await expect(header.getByRole("link", { name: "アカウント" })).toBeVisible();
-  await expect(header.getByText("me@example.com")).toHaveCount(0);
+  await expect(header.getByText("me", { exact: true })).toHaveCount(0);
   await expect(header.getByRole("button", { name: "ログアウト" })).toBeVisible();
-  await shot(page, testInfo, "3. 元の画面（統計）に戻り、ヘッダーに「アカウント」（表示名を決めていないとき）とログアウトが出た。メールアドレスは出ない");
+  await shot(page, testInfo, "3. 元の画面（統計）に戻り、ヘッダーに「アカウント」（表示名を決めていないとき）とログアウトが出た。ログインの ID は出ない");
 
   await header.getByRole("button", { name: "ログアウト" }).click();
   await expect(page).toHaveURL(/\/login/);
@@ -195,8 +195,8 @@ test("UI-07 単語帳の共有: 表示名を決めて公開すると、ほかの
   const item = otherPage.locator(".shared-decks li").filter({ hasText: "共有する単語帳" });
   await expect(item).toContainText("はなこ");
   await expect(item).toContainText("2 枚");
-  await expect(otherPage.getByText("me@example.com")).toHaveCount(0);
-  await shot(otherPage, testInfo, "3. ほかの人の「みんなの単語帳」に出る（表示名だけで、メールアドレスは出ない）");
+  await expect(otherPage.getByText("me", { exact: true })).toHaveCount(0);
+  await shot(otherPage, testInfo, "3. ほかの人の「みんなの単語帳」に出る（表示名だけで、ログインの ID は出ない）");
 
   await item.getByRole("link").click();
   await expect(otherPage.getByText("I was skeptical at first.")).toBeVisible();
@@ -928,7 +928,7 @@ test("UI-26 おためし: 登録せずに試す → 同意して始める → �
 });
 
 test("UI-27 管理者の画面: 管理者にだけヘッダーに「管理」が出て、全体の数と日ごとの推移が見える。ほかの人は開けない", async ({ page, context }, testInfo) => {
-  const admin = await createUser("admin@example.com");
+  const admin = await createUser("admin");
   const deck = await createDeck(me.id, { name: "Deck" });
   const card = await createCard(deck, { front: "Hello world." });
   await db().query("INSERT INTO review_logs (card_id, deck_id, remembered) VALUES ($1, $2, true)", [card, deck]);
@@ -951,6 +951,41 @@ test("UI-27 管理者の画面: 管理者にだけヘッダーに「管理」が
   await expect(page.getByRole("heading", { name: /日ごとの推移/ })).toBeVisible();
   await expect(page.locator(".stat-tile").filter({ hasText: "登録ユーザー" }).locator(".stat-value")).toHaveText("3");
   await expect(page.locator(".table-view tbody tr")).toHaveCount(30);
-  await expect(page.getByText("me@example.com")).toHaveCount(0);
+  await expect(page.getByText("me", { exact: true })).toHaveCount(0);
   await shot(page, testInfo, "1. 管理者の画面。ユーザーの数・使った人・使われ方と、直近30日の推移（数だけで、だれのデータかは出さない）");
+});
+
+test("UI-28 新規登録: ID とパスワードで登録すると、復旧コードが一度だけ出る。パスワードを忘れても、ID と復旧コードで作り直してログインできる", async ({ page }, testInfo) => {
+  await page.goto("/signup");
+  await page.locator('input[name="username"]').fill("Hanako_01");
+  await page.locator('input[name="password"]').fill("firstpass1");
+  await page.locator('input[name="password2"]').fill("firstpass1");
+  await shot(page, testInfo, "1. 新規登録。メールアドレスはいらない");
+  await page.getByRole("button", { name: "登録する" }).click();
+
+  const code = page.getByLabel("復旧コード");
+  await expect(code).toHaveText(/^[A-Z2-9]{4}(-[A-Z2-9]{4}){3}$/);
+  await expect(page.getByText("ID は hanako_01 です")).toBeVisible();
+  const recovery = (await code.textContent()).trim();
+  await shot(page, testInfo, "2. 登録すると、ID（小文字にしたもの）と復旧コードが出る");
+  await page.getByRole("link", { name: "メモしたので、はじめる" }).click();
+  await expect(page).toHaveURL(/\/\?notice=welcome$/);
+
+  await page.locator("header").getByRole("button", { name: "ログアウト" }).click();
+  await expect(page).toHaveURL(/\/login/);
+  await page.getByRole("link", { name: /パスワードを忘れた/ }).click();
+  await expect(page).toHaveURL(/\/forgot-password$/);
+  await page.locator('input[name="username"]').fill("hanako_01");
+  await page.locator('input[name="code"]').fill(recovery.toLowerCase());
+  await page.locator('input[name="password"]').fill("secondpass2");
+  await page.locator('input[name="password2"]').fill("secondpass2");
+  await shot(page, testInfo, "3. パスワードを忘れたとき: ID と復旧コードと、新しいパスワードを入れる");
+  await page.getByRole("button", { name: "パスワードを作り直してログイン" }).click();
+
+  const next = page.getByLabel("復旧コード");
+  await expect(next).toHaveText(/^[A-Z2-9]{4}(-[A-Z2-9]{4}){3}$/);
+  expect((await next.textContent()).trim()).not.toBe(recovery);
+  await shot(page, testInfo, "4. 作り直すとログインし、新しい復旧コードが出る（前のコードは使えない）");
+  await page.getByRole("link", { name: "メモしたので、つづける" }).click();
+  await expect(page.locator("header").getByRole("button", { name: "ログアウト" })).toBeVisible();
 });

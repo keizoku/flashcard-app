@@ -13,7 +13,7 @@ export default async function TryPage() {
   return (
     <main className="auth-page">
       <h1>登録せずに試す</h1>
-      <p>メールアドレスもパスワードもいりません。あなただけの、おためし用のアカウントを作ります。</p>
+      <p>ID もパスワードもいりません。あなただけの、おためし用のアカウントを作ります。</p>
       <ul className="try-rules">
         <li>
           <strong>{GUEST_HOURS}時間（1日）たつと、アカウントごと自動で削除されます。</strong>
@@ -25,7 +25,7 @@ export default async function TryPage() {
         </li>
         <li>単語帳の公開・表示名・パスワード・パスキーは使えません。</li>
         <li>
-          同じブラウザなら、閉じても期限までは続きから使えます。メールアドレス・パスワードはないので、
+          同じブラウザなら、閉じても期限までは続きから使えます。ID・パスワードはないので、
           ほかのブラウザ・端末からは入れません（Cookie を消したときも、もう戻れません）。
         </li>
         <li>「おためしを終える」を押すと、その場で削除されます。</li>

@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 // ここでは Cookie があるかだけを見る（本当に有効なセッションかは、各画面の requireUser で確かめる）
 const SESSION_COOKIE = "flashcard_session";
 // /try はおためしの説明、/api/cron は期限の過ぎたおためしユーザーを消す処理（Vercel の Cron が呼ぶ）
-const PUBLIC_PATHS = ["/login", "/signup", "/verify", "/resend", "/forgot-password", "/reset-password", "/try", "/api/cron"];
+const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/try", "/api/cron"];
 
 export function middleware(request) {
   const { pathname, search } = request.nextUrl;

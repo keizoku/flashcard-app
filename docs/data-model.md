@@ -8,7 +8,6 @@ PostgreSQL 17。テーブル同士の関係とマイグレーションの履歴�
 ```mermaid
 erDiagram
   users ||--o{ user_sessions : "ログイン中"
-  users ||--o{ email_tokens : "メールのリンク"
   users ||--o{ passkeys : "パスキー"
   users |o--o{ passkey_challenges : "登録の合言葉"
   users ||--o{ decks : "持つ"
@@ -70,6 +69,7 @@ erDiagram
 | 022_guests.sql | おためしユーザー（users.guest_expires_at）と、おためしを始めた記録（guest_starts） |
 | 023_sample_decks.sql | おためしユーザーに最初から入れた単語帳の印（decks.is_sample） |
 | 024_guest_daily.sql | おためしを始めた回数を日ごとに数える（guest_daily）。管理者の画面のため |
+| 025_usernames.sql | メールアドレスをやめて ID でログインする（users.username・recovery_code_hash を足し、email・verified_at・email_tokens を消す。今までのアカウントはメールアドレスをそのまま ID にする。確認していないアカウントを消す）。登録の回数を数える signup_starts |
 
 決まり:
 - 当てたファイルは書き換えない。直すときは次の番号のファイルを足す

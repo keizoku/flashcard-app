@@ -20,9 +20,8 @@ let me;
 let other;
 beforeEach(async () => {
   await resetDb();
-  delete process.env.ALLOWED_EMAILS;
-  me = await createUser({ email: "me@example.com" });
-  other = await createUser({ email: "other@example.com" });
+  me = await createUser({ username: "me" });
+  other = await createUser({ username: "other" });
 });
 
 // 偽物の端末で、パスキーを登録しておく
@@ -38,7 +37,7 @@ describe("パスキーの登録", () => {
   test("PK-01 登録の options: このアプリのドメイン（APP_URL）で、端末に保存するパスキーを求める。登録ずみの端末は除く", async () => {
     let { options } = await beginPasskeyRegistration(me);
     expect(options.rp).toMatchObject({ id: "localhost", name: "フラッシュカード" });
-    expect(options.user.name).toBe("me@example.com");
+    expect(options.user.name).toBe("me");
     expect(options.authenticatorSelection.residentKey).toBe("required");
     expect(options.excludeCredentials).toEqual([]);
 
@@ -115,7 +114,7 @@ describe("パスキーでログイン", () => {
     const device = await register(me);
     const { options, token } = await beginPasskeyLogin();
     expect(options.rpId).toBe("localhost");
-    expect(options.allowCredentials ?? []).toEqual([]); // メールアドレスを入れずに、端末に選んでもらう
+    expect(options.allowCredentials ?? []).toEqual([]); // ID を入れずに、端末に選んでもらう
 
     const answer = device.login(options);
     expect(await finishPasskeyLogin(token, answer)).toEqual({ userId: me.id });
@@ -151,15 +150,10 @@ describe("パスキーでログイン", () => {
     expect((await finishPasskeyLogin(b.token, device.login(b.options))).error).toBeTruthy();
   });
 
-  test("PK-06 使える人を決めていて、その人でなくなった・登録が完了していないユーザーは、パスキーがあってもログインできない", async () => {
+  test("PK-06 おためしの期限が過ぎたユーザーは、消える前でも、パスキーでログインできない", async () => {
     const device = await register(me);
-    process.env.ALLOWED_EMAILS = "other@example.com";
-    let b = await beginPasskeyLogin();
-    expect((await finishPasskeyLogin(b.token, device.login(b.options))).error).toBeTruthy();
-
-    delete process.env.ALLOWED_EMAILS;
-    await pool.query("UPDATE users SET verified_at = NULL WHERE id = $1", [me.id]);
-    b = await beginPasskeyLogin();
+    await pool.query("UPDATE users SET guest_expires_at = now() - interval '1 second' WHERE id = $1", [me.id]);
+    const b = await beginPasskeyLogin();
     expect((await finishPasskeyLogin(b.token, device.login(b.options))).error).toBeTruthy();
   });
 });

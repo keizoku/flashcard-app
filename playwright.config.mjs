@@ -34,7 +34,7 @@ export default defineConfig({
       APP_URL: `http://localhost:${PORT}`,
       NEXT_TELEMETRY_DISABLED: "1",
       // 管理者の画面のテスト（UI-27）で使う管理者
-      ADMIN_EMAILS: "admin@example.com",
+      ADMIN_USERNAMES: "admin",
     },
   },
 });

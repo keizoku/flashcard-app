@@ -1,23 +1,15 @@
 "use server";
 
+import { timingSafeEqual } from "node:crypto";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import {
-  activateUser,
-  consumeEmailToken,
-  findUserByEmail,
-  normalizeEmail,
-  sendAlreadyRegisteredMail,
-  sendResetMail,
-  sendVerifyMail,
-  sentRecently,
-} from "@/lib/accounts";
-import { isAllowedEmail } from "@/lib/allowlist";
+import { createAccount, findUserByUsername, renewRecoveryCode } from "@/lib/accounts";
 import { createSession, destroyOtherSessions, destroySession, requireUser } from "@/lib/auth";
 import { pool } from "@/lib/db";
 import { GUEST_BLOCKED } from "@/lib/guest";
 import { burnPasswordCheck, checkPasswordRule, hashPassword, verifyPassword } from "@/lib/password";
-
-const MAIL_ERROR = "メールを送れませんでした。しばらくしてからもう一度お試しください";
+import { hashRecoveryCode } from "@/lib/recovery";
+import { checkUsernameRule, normalizeUsername } from "@/lib/username";
 
 // ログイン後に戻る先。このアプリの中のパスだけを許す
 function safeNext(raw) {
@@ -25,20 +17,22 @@ function safeNext(raw) {
   return next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : "/";
 }
 
+const sameHash = (a, b) => {
+  if (!a || !b || a.length !== b.length) return false;
+  return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+};
+
 // ---- ログイン・ログアウト -------------------------------------------------
 export async function login(prevState, formData) {
-  const email = normalizeEmail(formData.get("email"));
+  const username = normalizeUsername(formData.get("username"));
   const password = String(formData.get("password") ?? "");
-  const keep = { email: String(formData.get("email") ?? "").trim() };
-  if (!email || !password) return { ...keep, error: "メールアドレスとパスワードを入力してください" };
+  const keep = { username: String(formData.get("username") ?? "").trim() };
+  if (!username || !password) return { ...keep, error: "ID とパスワードを入力してください" };
 
-  // 使える人を決めているときは、ほかの人は登録済みでも「違います」と同じ扱いにする
-  const user = isAllowedEmail(email) ? await findUserByEmail(email) : null;
+  // おためしユーザーは、パスワードではログインできない（パスワードの値がどれとも合わない）
+  const user = await findUserByUsername(username);
   const ok = user ? await verifyPassword(password, user.password_hash) : await burnPasswordCheck(password);
-  if (!ok) return { ...keep, error: "メールアドレスかパスワードが違います" };
-  if (!user.verified_at) {
-    return { ...keep, error: "まだ登録が完了していません。届いたメールのリンクを開いてください", unverified: true };
-  }
+  if (!ok) return { ...keep, error: "ID かパスワードが違います" };
 
   await createSession(user.id);
   redirect(safeNext(formData.get("next")));
@@ -50,82 +44,55 @@ export async function logout() {
 }
 
 // ---- 新規登録 -------------------------------------------------------------
-// 登録済みかどうかが画面からわからないよう、どの場合も「メールを送りました」と表示する
+// 作れたら、そのままログインし、復旧コードを一度だけ返す（画面で見せて、メモしてもらう）
 export async function signup(prevState, formData) {
-  const email = normalizeEmail(formData.get("email"));
+  const username = normalizeUsername(formData.get("username"));
   const password = String(formData.get("password") ?? "");
-  const keep = { email: String(formData.get("email") ?? "").trim() };
-  if (!email) return { ...keep, error: "メールアドレスを正しく入力してください" };
+  const keep = { username: String(formData.get("username") ?? "").trim() };
+  const ruleU = checkUsernameRule(username);
+  if (ruleU) return { ...keep, error: ruleU };
   const rule = checkPasswordRule(password);
   if (rule) return { ...keep, error: rule };
   if (password !== String(formData.get("password2") ?? "")) return { ...keep, error: "確認用のパスワードが一致しません" };
-  if (!isAllowedEmail(email)) return { ...keep, error: "このアプリは、決まった人だけが使えます。このメールアドレスでは登録できません" };
 
-  const existing = await findUserByEmail(email);
-  let sent = true;
-  if (existing?.verified_at) {
-    // 本人にだけ「登録済みです」と知らせる
-    if (!(await sentRecently(existing.id, "verify"))) sent = await sendAlreadyRegisteredMail(existing);
-  } else if (existing) {
-    // まだ有効になっていない登録は、新しいパスワードで登録し直して、確認メールを送り直す
-    await pool.query("UPDATE users SET password_hash = $2 WHERE id = $1", [existing.id, await hashPassword(password)]);
-    if (!(await sentRecently(existing.id, "verify"))) sent = await sendVerifyMail(existing);
-  } else {
-    const { rows } = await pool.query(
-      `INSERT INTO users (email, password_hash) VALUES ($1, $2)
-       ON CONFLICT DO NOTHING RETURNING id, email`,
-      [email, await hashPassword(password)]
-    );
-    if (rows[0]) sent = await sendVerifyMail(rows[0]);
-  }
-  if (!sent) return { ...keep, error: MAIL_ERROR };
-  return { email, error: null, sent: true };
+  const r = await createAccount({ username, password, headers: await headers() });
+  if (r.error) return { ...keep, error: r.error };
+  await createSession(r.user.id);
+  return { error: null, done: true, username: r.user.username, recoveryCode: r.recoveryCode };
 }
 
-// 確認メールを送り直す（まだ登録が完了していない人だけ）
-export async function resendVerify(prevState, formData) {
-  const email = normalizeEmail(formData.get("email"));
-  if (!email) return { error: "メールアドレスを正しく入力してください", email: String(formData.get("email") ?? "") };
-  const user = isAllowedEmail(email) ? await findUserByEmail(email) : null;
-  if (user && !user.verified_at && !(await sentRecently(user.id, "verify"))) {
-    if (!(await sendVerifyMail(user))) return { error: MAIL_ERROR, email };
-  }
-  return { error: null, email, sent: true };
-}
-
-// ---- パスワードを忘れたとき ------------------------------------------------
-export async function requestReset(prevState, formData) {
-  const email = normalizeEmail(formData.get("email"));
-  if (!email) return { error: "メールアドレスを正しく入力してください", email: String(formData.get("email") ?? "") };
-  const user = isAllowedEmail(email) ? await findUserByEmail(email) : null;
-  if (user && !(await sentRecently(user.id, "reset"))) {
-    if (!(await sendResetMail(user))) return { error: MAIL_ERROR, email };
-  }
-  return { error: null, email, sent: true };
-}
-
-// メールのリンクから、新しいパスワードを設定する。設定したらそのままログインする
-export async function resetPassword(token, prevState, formData) {
+// ---- パスワードを忘れたとき（復旧コードで作り直す） ---------------------------
+// 合っていれば、新しいパスワードにし、ほかの端末のログインをすべて切ってログインする。
+// 使った復旧コードは使えなくなり、新しいコードを一度だけ返す
+export async function recoverPassword(prevState, formData) {
+  const username = normalizeUsername(formData.get("username"));
+  const code = String(formData.get("code") ?? "");
   const password = String(formData.get("password") ?? "");
+  const keep = { username: String(formData.get("username") ?? "").trim() };
+  if (!username || !code) return { ...keep, error: "ID と復旧コードを入力してください" };
   const rule = checkPasswordRule(password);
-  if (rule) return { error: rule };
-  if (password !== String(formData.get("password2") ?? "")) return { error: "確認用のパスワードが一致しません" };
+  if (rule) return { ...keep, error: rule };
+  if (password !== String(formData.get("password2") ?? "")) return { ...keep, error: "確認用のパスワードが一致しません" };
 
-  const hash = await hashPassword(password);
+  const user = await findUserByUsername(username);
+  if (!user || user.guest_expires_at || !sameHash(user.recovery_code_hash, hashRecoveryCode(code))) {
+    return { ...keep, error: "ID か復旧コードが違います" };
+  }
   const client = await pool.connect();
-  let userId;
+  let newCode;
   try {
     await client.query("BEGIN");
-    userId = await consumeEmailToken(client, token, "reset");
-    if (!userId) {
+    // 同じコードで同時に2回送られても、1回だけ通す（コードが変わっていなければ更新する）
+    const { rowCount } = await client.query(
+      "UPDATE users SET password_hash = $2 WHERE id = $1 AND recovery_code_hash = $3",
+      [user.id, await hashPassword(password), user.recovery_code_hash]
+    );
+    if (rowCount === 0) {
       await client.query("ROLLBACK");
-      return { error: "リンクの期限が切れているか、すでに使われています。もう一度メールを送ってください", expired: true };
+      return { ...keep, error: "ID か復旧コードが違います" };
     }
-    await client.query("UPDATE users SET password_hash = $2 WHERE id = $1", [userId, hash]);
-    // リンクを開けた = メールアドレスの持ち主なので、登録が未完了ならここで完了にする
-    await activateUser(client, userId);
-    // ほかの端末のログインは、すべて切る
-    await client.query("DELETE FROM user_sessions WHERE user_id = $1", [userId]);
+    newCode = await renewRecoveryCode(user.id, client);
+    await client.query("DELETE FROM user_sessions WHERE user_id = $1", [user.id]);
     await client.query("COMMIT");
   } catch (err) {
     await client.query("ROLLBACK");
@@ -133,8 +100,8 @@ export async function resetPassword(token, prevState, formData) {
   } finally {
     client.release();
   }
-  await createSession(userId);
-  redirect("/?notice=password-reset");
+  await createSession(user.id);
+  return { error: null, done: true, username: user.username, recoveryCode: newCode };
 }
 
 // ---- アカウント ------------------------------------------------------------
@@ -156,4 +123,16 @@ export async function changePassword(prevState, formData) {
   // この端末以外のログインは切る
   await destroyOtherSessions(user.id);
   return { error: null, saved: true, version: Date.now() };
+}
+
+// 復旧コードを作り直す（なくしたとき・まだ持っていないとき）。今のパスワードを確かめてから
+export async function regenerateRecoveryCode(prevState, formData) {
+  const user = await requireUser();
+  if (user.guestExpiresAt) return { error: GUEST_BLOCKED };
+  const current = String(formData.get("current") ?? "");
+  const { rows } = await pool.query("SELECT password_hash FROM users WHERE id = $1", [user.id]);
+  if (!rows[0] || !(await verifyPassword(current, rows[0].password_hash))) {
+    return { error: "今のパスワードが違います" };
+  }
+  return { error: null, recoveryCode: await renewRecoveryCode(user.id), version: Date.now() };
 }

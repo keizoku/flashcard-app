@@ -17,7 +17,7 @@ for arg in "$@"; do
 done
 
 APP_URL="http://localhost:3000"
-PORTS=(3000 5432 8025 3100) # アプリ / DB / 開発用の受信箱 / テスト実行ツール（compose.yaml と合わせる）
+PORTS=(3000 5432 3100) # アプリ / DB / テスト実行ツール（compose.yaml と合わせる）
 WAIT_SECONDS=300            # 初回はビルドと画面の準備に時間がかかる
 
 step() { printf '\n\033[1m▶ %s\033[0m\n' "$1"; }
@@ -101,8 +101,8 @@ cat <<EOF
 
 $(printf '\033[1m')セットアップが終わりました$(printf '\033[0m')
 
-  1. $APP_URL/signup でメールアドレスとパスワード（8文字以上）を入れて登録
-  2. 開発用の受信箱 http://localhost:8025 に届くメールのリンクを開くと、登録が完了します
+  1. $APP_URL/signup で ID とパスワード（8文字以上）を決めて登録
+  2. 出てきた「復旧コード」をメモする（パスワードを忘れたときに使います）
 
   止める:   docker compose down（データは残ります）
   また使う: docker compose up -d（または、もう一度 ./setup.sh）

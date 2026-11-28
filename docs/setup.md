@@ -9,7 +9,7 @@
 | --- | --- | --- | --- |
 | Docker | [Docker Desktop](https://www.docker.com/products/docker-desktop/)（WSL 2 を使う設定のまま） | [Docker Desktop](https://www.docker.com/products/docker-desktop/) | [Docker Engine](https://docs.docker.com/engine/install/) と Compose プラグイン |
 | git | [Git for Windows](https://git-scm.com/download/win) | ターミナルで `xcode-select --install` | `sudo apt install git` など |
-| GitHub | リポジトリは非公開です。持ち主に「Collaborator」として招待してもらい、メールで届く招待を承認してください | 同じ | 同じ |
+| GitHub | リポジトリは公開しています。アカウントがなくても取ってこられます | 同じ | 同じ |
 
 - Node.js や PostgreSQL を入れる必要はありません（Docker の中で動きます）
 - メモリは 4GB 以上あると安心です。ディスクは 3GB ほど使います
@@ -48,7 +48,7 @@ PowerShell から実行するなら、次のとおりです。
 
 1. git と Docker が入っていて、Docker が動いているかを確かめる
 2. コミットの前に単体テストが走るように、git を設定する（`git config core.hooksPath .githooks`）
-3. 使うポート（3000・5432・8025・3100）が空いているかを確かめる
+3. 使うポート（3000・5432・3100）が空いているかを確かめる
 4. `docker compose up -d --build` で起動し、画面が開けるようになるまで待つ（**初回は数分かかります**）
 5. 単体テストを実行して、正しく動くかを確かめる（テスト用の DB を使うので、データには触れません）
 6. 次にすることを表示する
@@ -61,13 +61,12 @@ PowerShell から実行するなら、次のとおりです。
 
 ## 3. ユーザー登録
 
-1. http://localhost:3000/signup で、メールアドレスとパスワード（8文字以上）を入れる
-2. 開発用の受信箱 http://localhost:8025 を開き、届いたメールのリンクを開くと、登録が完了します
+1. http://localhost:3000/signup で、ID（英小文字・数字・「_」「-」で3〜20文字）とパスワード（8文字以上）を決める
+2. 登録するとそのままログインし、**復旧コード** が一度だけ出ます。パスワードを忘れたときに使うので、メモしてください
 
-メールは外には送られず、この受信箱（Mailpit）に届きます。本物のメールを送りたいときは、
-`.env.example` を `.env` にコピーして SMTP の設定を書き、`docker compose up -d` を実行します。
-使える人をメールアドレスで決めたいときは、`.env` の `ALLOWED_EMAILS` に書きます（空なら、だれでも登録できます）。
-管理者の画面（`/admin`。ユーザーの数・使われ方の集計）を見たいときは、`.env` の `ADMIN_EMAILS` に自分のメールアドレスを書き、`docker compose up -d` を実行します。
+メールアドレスはいりません（アプリは個人情報を持ちません）。
+管理者の画面（`/admin`。ユーザーの数・使われ方の集計）を見たいときは、`.env.example` を `.env` にコピーし、
+`ADMIN_USERNAMES` に自分の ID を書いて、`docker compose up -d` を実行します。
 
 ## 4. ふだんの使い方
 

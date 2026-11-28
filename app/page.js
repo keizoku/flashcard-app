@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { isSignupOpen } from "@/lib/allowlist";
 import { getCurrentUser } from "@/lib/auth";
 import { getComprehensionByDeck } from "@/lib/comprehension";
 import { pool } from "@/lib/db";
@@ -13,13 +12,12 @@ export const dynamic = "force-dynamic";
 
 const NOTICES = {
   welcome: "登録が完了しました。ようこそ！",
-  "password-reset": "新しいパスワードを設定しました。",
 };
 
 export default async function Home({ searchParams }) {
   // ログインしていなければ、ホームページ（アプリの紹介）を出す
   const user = await getCurrentUser();
-  if (!user) return <Landing inviteOnly={!isSignupOpen()} />;
+  if (!user) return <Landing />;
   const { notice } = await searchParams;
   const { rows: decks } = await pool.query(
     `

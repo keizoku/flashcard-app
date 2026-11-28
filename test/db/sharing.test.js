@@ -22,8 +22,8 @@ let me;
 let other;
 beforeEach(async () => {
   await resetDb();
-  me = await createUser({ email: "me@example.com" });
-  other = await createUser({ email: "other@example.com" });
+  me = await createUser({ username: "me" });
+  other = await createUser({ username: "other" });
   await loginAs(me);
 });
 
@@ -64,10 +64,10 @@ describe("表示名", () => {
   test("SH-02 表示名を保存できる（自分の分だけ）。公開中の単語帳があると、空にはできない", async () => {
     const r = await updateDisplayName(null, formData({ displayName: " はなこ " }));
     expect(r).toEqual({ error: null, saved: true, name: "はなこ" });
-    const names = await pool.query("SELECT email, display_name FROM users ORDER BY id");
+    const names = await pool.query("SELECT username, display_name FROM users ORDER BY id");
     expect(names.rows).toEqual([
-      { email: "me@example.com", display_name: "はなこ" },
-      { email: "other@example.com", display_name: null },
+      { username: "me", display_name: "はなこ" },
+      { username: "other", display_name: null },
     ]);
 
     const deck = await createDeck(me.id);
@@ -111,7 +111,7 @@ describe("公開する・やめる", () => {
 });
 
 describe("みんなの単語帳", () => {
-  test("SH-05 一覧には公開中の単語帳だけが、表示名・枚数・タグ付きで出る。メールアドレスは出さない", async () => {
+  test("SH-05 一覧には公開中の単語帳だけが、表示名・枚数・タグ付きで出る。ログインの ID は出さない", async () => {
     const theirs = await publishedByOther();
     await createDeck(other.id, { name: "非公開" });
     await setDisplayName(me.id, "はなこ");
@@ -124,7 +124,7 @@ describe("みんなの単語帳", () => {
     const t = list.find((d) => d.id === theirs);
     expect(t).toMatchObject({ display_name: "たろう", card_count: 2, tags: ["映画", "英検"], is_mine: false, imported_deck_id: null });
     expect(list.find((d) => d.id === mine)).toMatchObject({ display_name: "はなこ", is_mine: true });
-    expect(JSON.stringify(list)).not.toContain("@example.com");
+    expect(JSON.stringify(list)).not.toMatch(/username|"other"|"me"/);
   });
 
   test("SH-06 公開していない単語帳の中身は見られない（画面は 404）。公開中なら、カードと覚えたい語が見られる", async () => {
@@ -138,7 +138,7 @@ describe("みんなの単語帳", () => {
       { front: "I was skeptical.", words: ["skeptical"] },
       { front: "Figure it out.", words: ["figure sth out"] },
     ]);
-    expect(JSON.stringify(deck)).not.toContain("@example.com");
+    expect(JSON.stringify(deck)).not.toMatch(/username|"other"|"me"/);
     expect(deck.cards[0]).not.toHaveProperty("review_box");
 
     await setDeckPublished(other.id, theirs, false);
@@ -222,7 +222,7 @@ describe("取り込み", () => {
     const first = (await copyPublicDeck(me.id, theirs)).deckId;
     expect((await listPublicDecks(me.id))[0].imported_deck_id).toBe(first);
     expect((await getPublicDeck(theirs, me.id)).imported_deck_id).toBe(first);
-    const third = await createUser({ email: "third@example.com" });
+    const third = await createUser({ username: "third" });
     expect((await listPublicDecks(third.id))[0].imported_deck_id).toBeNull();
 
     const second = (await copyPublicDeck(me.id, theirs)).deckId;

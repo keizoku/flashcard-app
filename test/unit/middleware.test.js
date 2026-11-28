@@ -6,7 +6,7 @@ const req = (path, cookie) =>
   new NextRequest(`http://localhost:3000${path}`, cookie ? { headers: { cookie: `flashcard_session=${cookie}` } } : {});
 
 test("MW-01 ログイン不要の画面はそのまま通す", () => {
-  for (const p of ["/login", "/signup", "/verify?token=x", "/resend", "/forgot-password", "/reset-password?token=x"]) {
+  for (const p of ["/login", "/signup", "/forgot-password"]) {
     expect(middleware(req(p)).headers.get("location")).toBeNull();
   }
 });
@@ -27,8 +27,10 @@ test("MW-04 Cookie があれば通す（有効かどうかは各画面で確か�
   expect(middleware(req("/stats", "anything")).headers.get("location")).toBeNull();
 });
 
-test("MW-05 /loginx のような似た名前は公開しない", () => {
-  expect(middleware(req("/loginx")).headers.get("location")).toContain("/login?next=");
+test("MW-05 /loginx のような似た名前や、なくした画面（/verify など）は公開しない", () => {
+  for (const p of ["/loginx", "/verify?token=x", "/reset-password?token=x"]) {
+    expect(middleware(req(p)).headers.get("location")).toContain("/login?next=");
+  }
 });
 
 test("MW-06 おためしの説明（/try）と、期限の過ぎたおためしユーザーを消す処理（/api/cron/...）は、ログインしていなくても通す", () => {

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { logout } from "@/app/auth/actions";
 import { isAdmin } from "@/lib/admin";
-import { isSignupOpen } from "@/lib/allowlist";
 import { getCurrentUser } from "@/lib/auth";
 import { guestHoursLeft } from "@/lib/guest";
 import "./globals.css";
@@ -34,9 +33,9 @@ export default async function RootLayout({ children }) {
                   <Link href="/shared">みんなの単語帳</Link>
                   <Link href="/stats">統計</Link>
                   <Link href="/settings">レベル設定</Link>
-                  {/* 管理者（ADMIN_EMAILS の人）にだけ出す */}
+                  {/* 管理者（ADMIN_USERNAMES の人）にだけ出す */}
                   {isAdmin(user) && <Link href="/admin">管理</Link>}
-                  {/* メールアドレスは出さない（画面を人に見られても大丈夫なように）。表示名がなければ「アカウント」 */}
+                  {/* ログインの ID は出さない（画面を人に見られても大丈夫なように）。表示名がなければ「アカウント」 */}
                   <Link href="/account" className="nav-account" title="アカウント（表示名・パスワードの変更）">
                     {user.displayName ?? "アカウント"}
                   </Link>
@@ -47,8 +46,7 @@ export default async function RootLayout({ children }) {
               ) : (
                 <>
                   <Link href="/login">ログイン</Link>
-                  {/* 使える人を決めているときは、新規登録を出さない */}
-                  {isSignupOpen() && <Link href="/signup">新規登録</Link>}
+                  <Link href="/signup">新規登録</Link>
                   <Link href="/try">登録せずに試す</Link>
                 </>
               )}

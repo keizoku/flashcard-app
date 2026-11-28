@@ -18,8 +18,8 @@ let myDeck;
 let theirDeck;
 beforeEach(async () => {
   await resetDb();
-  me = await createUser({ email: "me@example.com" });
-  other = await createUser({ email: "other@example.com" });
+  me = await createUser({ username: "me" });
+  other = await createUser({ username: "other" });
   myDeck = await createDeck(me.id, { name: "my deck" });
   theirDeck = await createDeck(other.id, { name: "their deck" });
 });

@@ -8,7 +8,7 @@ let me;
 let deck;
 beforeEach(async () => {
   await resetDb();
-  me = await createUser({ email: "me@example.com" });
+  me = await createUser({ username: "me" });
   await loginAs(me);
   deck = await createDeck(me.id, { name: "動画" });
 });

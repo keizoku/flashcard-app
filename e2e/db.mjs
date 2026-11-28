@@ -26,7 +26,7 @@ export async function closeDb() {
 
 const TABLES = [
   "review_logs", "card_targets", "cards", "deck_tags", "tags", "decks",
-  "known_words", "settings", "email_tokens", "user_sessions", "users", "study_time", "story_scenes", "passkeys", "passkey_challenges", "guest_starts", "guest_daily",
+  "known_words", "settings", "user_sessions", "users", "study_time", "story_scenes", "passkeys", "passkey_challenges", "guest_starts", "guest_daily", "signup_starts",
 ];
 
 export async function resetDb() {
@@ -41,10 +41,10 @@ function hashPassword(password) {
   return `scrypt$${salt.toString("base64")}$${scryptSync(password, salt, 64).toString("base64")}`;
 }
 
-export async function createUser(email) {
+export async function createUser(username) {
   const { rows } = await db().query(
-    "INSERT INTO users (email, password_hash, verified_at) VALUES ($1, $2, now()) RETURNING id, email",
-    [email, hashPassword(PASSWORD)]
+    "INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username",
+    [username, hashPassword(PASSWORD)]
   );
   return rows[0];
 }

@@ -28,8 +28,7 @@ import { createCard, createDeck, createUser, formData, loginAs, logoutCookie, PA
 let other;
 beforeEach(async () => {
   await resetDb();
-  delete process.env.ALLOWED_EMAILS;
-  other = await createUser({ email: "other@example.com" });
+  other = await createUser({ username: "other" });
 });
 
 const count = async (sql, params = []) => (await pool.query(sql, params)).rows[0].n;
@@ -68,7 +67,7 @@ describe("おためしを始める", () => {
     expect(await getCurrentUser()).toBeNull();
 
     const user = await guestLogin();
-    expect(user.email).toMatch(/^guest-[a-z0-9_-]+@guest\.invalid$/);
+    expect(user.username).toMatch(/^guest-[0-9a-f]+$/);
     const hours = (new Date(user.guestExpiresAt) - Date.now()) / 3600000;
     expect(hours).toBeGreaterThan(GUEST_HOURS - 0.1);
     expect(hours).toBeLessThanOrEqual(GUEST_HOURS);
@@ -88,22 +87,18 @@ describe("おためしを始める", () => {
     const user = await guestLogin();
     logoutCookie();
     for (const password of ["", PASSWORD, "guest-no-password"]) {
-      const r = await runAction(login({}, formData({ email: user.email, password })));
+      const r = await runAction(login({}, formData({ username: user.username, password })));
       expect(r.redirectTo).toBeNull();
       expect(r.result.error).toBeTruthy();
     }
     expect(await getCurrentUser()).toBeNull();
   });
 
-  test("GU-03 使える人を決めていても（招待制）、おためしユーザーは期限まで使える。期限が過ぎたら、消える前でもログインしていない扱い", async () => {
-    process.env.ALLOWED_EMAILS = "owner@example.com";
+  test("GU-03 おためしユーザーは期限まで使える。期限が過ぎたら、消える前でもログインしていない扱い", async () => {
     const user = await guestLogin();
     expect((await getCurrentUser())?.id).toBe(user.id);
 
     await pool.query("UPDATE users SET guest_expires_at = now() - interval '1 second' WHERE id = $1", [user.id]);
-    expect(await getCurrentUser()).toBeNull();
-    // ふつうのユーザーは、今までどおり使える人だけ
-    await loginAs(other);
     expect(await getCurrentUser()).toBeNull();
   });
 
@@ -139,14 +134,14 @@ describe("おためしを始める", () => {
 
   test("GU-05 同時に使えるおためしユーザーは30人まで（MAX_ACTIVE_GUESTS。いっぱいなら始められない）", async () => {
     await pool.query(
-      `INSERT INTO users (email, password_hash, verified_at, guest_expires_at)
-       SELECT 'guest-' || g || '@guest.invalid', 'x', now(), now() + interval '1 hour' FROM generate_series(1, $1) g`,
+      `INSERT INTO users (username, password_hash, guest_expires_at)
+       SELECT 'guest-' || g, 'x', now() + interval '1 hour' FROM generate_series(1, $1) g`,
       [MAX_ACTIVE_GUESTS]
     );
     const r = await createGuest({ ip: "192.0.2.1" });
     expect(r.error).toContain("いっぱい");
     // 期限の過ぎた人は数えない（始めるときに片付ける）
-    await pool.query("UPDATE users SET guest_expires_at = now() - interval '1 second' WHERE email = 'guest-1@guest.invalid'");
+    await pool.query("UPDATE users SET guest_expires_at = now() - interval '1 second' WHERE username = 'guest-1'");
     expect((await createGuest({ ip: "192.0.2.1" })).user).toBeTruthy();
   });
 });
@@ -289,7 +284,7 @@ describe("おためしユーザーの削除", () => {
   test("GU-13 ログインするたびに、期限の過ぎたおためしユーザーも片付ける", async () => {
     const g = await createGuest({ ip: "192.0.2.30" });
     await pool.query("UPDATE users SET guest_expires_at = now() - interval '1 minute' WHERE id = $1", [g.user.id]);
-    const { redirectTo } = await runAction(login({}, formData({ email: other.email, password: PASSWORD })));
+    const { redirectTo } = await runAction(login({}, formData({ username: other.username, password: PASSWORD })));
     expect(redirectTo).toBe("/");
     expect(await count("SELECT count(*)::int AS n FROM users WHERE id = $1", [g.user.id])).toBe(0);
   });

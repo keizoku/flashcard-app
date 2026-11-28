@@ -2,23 +2,30 @@
 
 import { useActionState } from "react";
 import Link from "next/link";
-import { changePassword, login, requestReset, resendVerify, resetPassword, signup } from "./actions";
+import { USERNAME_HINT, USERNAME_MAX } from "@/lib/username";
+import { changePassword, login, recoverPassword, regenerateRecoveryCode, signup } from "./actions";
 
 const MIN = 8;
+const LOGIN_ID_MAX = 254; // メールアドレスの長さの上限
 
-function EmailField({ defaultValue, autoFocus = true }) {
+// maxLength: 新規登録は ID の決まりの長さまで。ログイン・パスワードを忘れたときは、
+// 前からのアカウントの ID（メールアドレス）も入るよう長くする
+function UsernameField({ defaultValue, autoFocus = true, hint, maxLength = LOGIN_ID_MAX }) {
   return (
     <label>
-      メールアドレス
+      ID
       <input
-        name="email"
-        type="email"
+        name="username"
+        type="text"
         defaultValue={defaultValue}
-        autoComplete="email"
+        autoComplete="username"
+        autoCapitalize="none"
+        spellCheck={false}
         required
-        maxLength={254}
+        maxLength={maxLength}
         autoFocus={autoFocus}
       />
+      {hint && <span className="note small field-hint">{hint}</span>}
     </label>
   );
 }
@@ -49,40 +56,33 @@ function Error({ state }) {
   ) : null;
 }
 
-// メールを送ったあとの表示
-function Sent({ email, children }) {
+// 復旧コードを一度だけ見せる。パスワードを忘れたときに必要なので、メモしてもらう
+export function RecoveryCode({ code, children }) {
   return (
-    <div className="auth-sent" role="status">
+    <div className="recovery-code" role="status">
       <p>
-        <strong>{email}</strong> にメールを送りました。
+        <strong>復旧コード</strong>（パスワードを忘れたときに、パスワードを作り直すのに使います）
+      </p>
+      <p className="recovery-code-value" aria-label="復旧コード">
+        {code}
+      </p>
+      <p className="note small">
+        このコードは、今だけ表示します。紙に書くか、パスワード管理アプリに保存してください。
+        メールアドレスを登録していないので、コードもパスワードもなくすと、アカウントに戻れません。
       </p>
       {children}
-      <p className="note small">
-        メールが届かないときは、迷惑メールのフォルダも確認してください。
-        {process.env.NODE_ENV !== "production" && (
-          <>
-            {" "}
-            （開発中は <a href="http://localhost:8025" target="_blank" rel="noreferrer">開発用の受信箱</a> に届きます）
-          </>
-        )}
-      </p>
     </div>
   );
 }
 
 export function LoginForm({ next }) {
-  const [state, action, pending] = useActionState(login, { error: null, email: "" });
+  const [state, action, pending] = useActionState(login, { error: null, username: "" });
   return (
     <form action={action} className="add-form auth-form">
       <input type="hidden" name="next" value={next ?? ""} />
-      <EmailField defaultValue={state.email} />
+      <UsernameField defaultValue={state.username} />
       <PasswordField autoComplete="current-password" />
       <Error state={state} />
-      {state.unverified && (
-        <p className="note small">
-          メールが見つからないときは <Link href="/resend">確認メールを送り直す</Link>
-        </p>
-      )}
       <button type="submit" disabled={pending}>
         {pending ? "ログイン中…" : "ログイン"}
       </button>
@@ -90,82 +90,79 @@ export function LoginForm({ next }) {
   );
 }
 
-export function SignupForm() {
-  const [state, action, pending] = useActionState(signup, { error: null, email: "" });
-  if (state.sent) {
+export function SignupForm({ loggedIn = false }) {
+  const [state, action, pending] = useActionState(signup, { error: null, username: "" });
+  if (state.done) {
     return (
-      <Sent email={state.email}>
-        <p>メールのリンクを開くと登録が完了し、そのままログインします（リンクは24時間有効）。</p>
-      </Sent>
+      <>
+        <p className="success" role="status">
+          登録しました。ID は <strong>{state.username}</strong> です。
+        </p>
+        <RecoveryCode code={state.recoveryCode}>
+          <p>
+            <Link href="/?notice=welcome" className="button-link">
+              メモしたので、はじめる
+            </Link>
+          </p>
+        </RecoveryCode>
+      </>
+    );
+  }
+  if (loggedIn) {
+    return (
+      <p className="note" role="status">
+        いまログインしています。別のアカウントを作るときは、ログアウトしてから開いてください。{" "}
+        <Link href="/">トップへ</Link>
+      </p>
     );
   }
   return (
     <form action={action} className="add-form auth-form">
-      <EmailField defaultValue={state.email} />
+      <UsernameField
+        defaultValue={state.username}
+        maxLength={USERNAME_MAX}
+        hint={`${USERNAME_HINT}。ログインに使います（ほかの人には見えません）`}
+      />
       <PasswordField autoComplete="new-password" hint={`${MIN}文字以上`} />
       <PasswordField name="password2" label="パスワード（確認）" autoComplete="new-password" />
       <Error state={state} />
       <button type="submit" disabled={pending}>
-        {pending ? "送信中…" : "登録して確認メールを受け取る"}
+        {pending ? "登録中…" : "登録する"}
       </button>
     </form>
   );
 }
 
-export function ResendForm() {
-  const [state, action, pending] = useActionState(resendVerify, { error: null, email: "" });
-  if (state.sent) {
+export function RecoverForm() {
+  const [state, action, pending] = useActionState(recoverPassword, { error: null, username: "" });
+  if (state.done) {
     return (
-      <Sent email={state.email}>
-        <p>まだ登録が完了していないアドレスなら、確認メールが届きます。リンクを開くと登録が完了します。</p>
-      </Sent>
+      <>
+        <p className="success" role="status">
+          新しいパスワードにしました。ほかの端末のログインは切れました。使った復旧コードは、もう使えません。
+        </p>
+        <RecoveryCode code={state.recoveryCode}>
+          <p>
+            <Link href="/" className="button-link">
+              メモしたので、つづける
+            </Link>
+          </p>
+        </RecoveryCode>
+      </>
     );
   }
   return (
     <form action={action} className="add-form auth-form">
-      <EmailField defaultValue={state.email} />
-      <Error state={state} />
-      <button type="submit" disabled={pending}>
-        {pending ? "送信中…" : "確認メールを送り直す"}
-      </button>
-    </form>
-  );
-}
-
-export function ForgotForm() {
-  const [state, action, pending] = useActionState(requestReset, { error: null, email: "" });
-  if (state.sent) {
-    return (
-      <Sent email={state.email}>
-        <p>登録されているアドレスなら、パスワードを再設定するリンクが届きます（リンクは1時間有効）。</p>
-      </Sent>
-    );
-  }
-  return (
-    <form action={action} className="add-form auth-form">
-      <EmailField defaultValue={state.email} />
-      <Error state={state} />
-      <button type="submit" disabled={pending}>
-        {pending ? "送信中…" : "再設定のメールを送る"}
-      </button>
-    </form>
-  );
-}
-
-export function ResetForm({ token }) {
-  const [state, action, pending] = useActionState(resetPassword.bind(null, token), { error: null });
-  return (
-    <form action={action} className="add-form auth-form">
-      <PasswordField label="新しいパスワード" autoComplete="new-password" hint={`${MIN}文字以上`} autoFocus />
+      <UsernameField defaultValue={state.username} />
+      <label>
+        復旧コード
+        <input name="code" type="text" autoComplete="off" autoCapitalize="characters" spellCheck={false} required maxLength={40} />
+      </label>
+      <PasswordField label="新しいパスワード" autoComplete="new-password" hint={`${MIN}文字以上`} />
       <PasswordField name="password2" label="新しいパスワード（確認）" autoComplete="new-password" />
       <Error state={state} />
-      {state.expired && (
-        <p className="note small">
-          <Link href="/forgot-password">再設定のメールをもう一度送る</Link>
-        </p>
-      )}
       <button type="submit" disabled={pending}>
-        {pending ? "設定中…" : "パスワードを設定してログイン"}
+        {pending ? "設定中…" : "パスワードを作り直してログイン"}
       </button>
     </form>
   );
@@ -189,5 +186,22 @@ export function ChangePasswordForm() {
         {pending ? "変更中…" : "パスワードを変更"}
       </button>
     </form>
+  );
+}
+
+// 復旧コードを作り直す（アカウントの画面）
+export function RegenerateRecoveryForm() {
+  const [state, action, pending] = useActionState(regenerateRecoveryCode, { error: null, version: 0 });
+  return (
+    <>
+      {state.recoveryCode && <RecoveryCode code={state.recoveryCode} />}
+      <form action={action} className="add-form auth-form" key={state.version}>
+        <PasswordField name="current" label="今のパスワード" autoComplete="current-password" />
+        <Error state={state} />
+        <button type="submit" disabled={pending}>
+          {pending ? "作成中…" : "復旧コードを作り直す"}
+        </button>
+      </form>
+    </>
   );
 }

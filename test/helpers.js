@@ -5,15 +5,14 @@ import { hashToken } from "@/lib/auth";
 
 const TABLES = [
   "review_logs", "card_targets", "cards", "deck_tags", "tags", "decks",
-  "known_words", "settings", "email_tokens", "user_sessions", "users", "study_time", "story_scenes", "passkeys", "passkey_challenges", "guest_starts", "guest_daily",
+  "known_words", "settings", "user_sessions", "users", "study_time", "story_scenes", "passkeys", "passkey_challenges", "guest_starts", "guest_daily", "signup_starts",
 ];
 
-// すべてのテーブルを空にして、Cookie と送ったメールも消す
+// すべてのテーブルを空にして、Cookie も消す
 export async function resetDb() {
   await pool.query(`TRUNCATE ${TABLES.join(", ")} RESTART IDENTITY CASCADE`);
   globalThis.testCookies.clear();
   globalThis.testHeaders = {};
-  globalThis.sentMails.length = 0;
 }
 
 // パスワードのハッシュは時間がかかるので、テストでは決まった値を使う（パスワード "password123"）
@@ -27,11 +26,10 @@ async function passwordHash() {
   return cachedHash;
 }
 
-export async function createUser({ email = "user@example.com", verified = true } = {}) {
+export async function createUser({ username = "user" } = {}) {
   const { rows } = await pool.query(
-    `INSERT INTO users (email, password_hash, verified_at) VALUES ($1, $2, CASE WHEN $3 THEN now() END)
-     RETURNING id, email`,
-    [email, await passwordHash(), verified]
+    "INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username",
+    [username, await passwordHash()]
   );
   return rows[0];
 }
@@ -94,7 +92,3 @@ export function formData(fields) {
   return fd;
 }
 
-// メールの本文から、最初の URL を取り出す
-export function linkIn(mail) {
-  return mail.text.match(/https?:\/\/\S+/)?.[0] ?? null;
-}

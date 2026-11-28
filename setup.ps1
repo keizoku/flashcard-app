@@ -11,7 +11,7 @@ Set-Location -Path $PSScriptRoot
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
 
 $AppUrl = "http://localhost:3000"
-$Ports = @(3000, 5432, 8025, 3100)   # アプリ / DB / 開発用の受信箱 / テスト実行ツール（compose.yaml と合わせる）
+$Ports = @(3000, 5432, 3100)   # アプリ / DB / テスト実行ツール（compose.yaml と合わせる）
 $WaitSeconds = 300             # 初回はビルドと画面の準備に時間がかかる
 
 function Step($text) { Write-Host ""; Write-Host "▶ $text" -ForegroundColor Cyan }
@@ -119,8 +119,8 @@ if ($SkipTests) {
 Write-Host ""
 Write-Host "セットアップが終わりました" -ForegroundColor Green
 Write-Host ""
-Write-Host "  1. $AppUrl/signup でメールアドレスとパスワード（8文字以上）を入れて登録"
-Write-Host "  2. 開発用の受信箱 http://localhost:8025 に届くメールのリンクを開くと、登録が完了します"
+Write-Host "  1. $AppUrl/signup で ID とパスワード（8文字以上）を決めて登録"
+Write-Host "  2. 出てきた「復旧コード」をメモする（パスワードを忘れたときに使います）"
 Write-Host ""
 Write-Host "  止める:   docker compose down（データは残ります）"
 Write-Host "  また使う: docker compose up -d（または、もう一度 setup.cmd）"

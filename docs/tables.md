@@ -11,13 +11,13 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 
 | テーブル | 内容 | 作ったマイグレーション |
 | --- | --- | --- |
-| [users](#users) | ユーザー（おためしユーザーも） | 013（014・019・022 で列を追加） |
+| [users](#users) | ユーザー（おためしユーザーも） | 013（014・019・022・025 で列を変更） |
 | [user_sessions](#user_sessions) | ログイン中のセッション | 013 |
-| [email_tokens](#email_tokens) | メールのリンクの合言葉 | 013 |
 | [passkeys](#passkeys) | パスキー（端末の公開鍵） | 021 |
 | [passkey_challenges](#passkey_challenges) | パスキーの登録・ログインの合言葉 | 021 |
 | [guest_starts](#guest_starts) | おためしを始めた記録（回数の制限のため） | 022 |
 | [guest_daily](#guest_daily) | おためしを始めた回数（日ごと。管理者の画面のため） | 024 |
+| [signup_starts](#signup_starts) | 登録した記録（回数の制限のため） | 025 |
 | [decks](#decks) | 単語帳 | 001（003・005・012・013・014・023 などで列を追加） |
 | [cards](#cards) | カード | 001 |
 | [card_targets](#card_targets) | カードの覚えたい語 | 011 |
@@ -34,22 +34,22 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 
 ## users
 
-ユーザー。メールアドレスとパスワードでログインする（[auth.md](auth.md)）。
+ユーザー。ID とパスワードでログインする（[auth.md](auth.md)）。メールアドレスなどの個人情報は持たない。
 
 | 列 | 型 | NULL | 初期値 | 説明 |
 | --- | --- | --- | --- | --- |
 | id | integer | | 連番 | 主キー |
-| email | text | | | メールアドレス。大文字・小文字は同じとみなして一意 |
+| username | text | | | ログインの ID（025）。英小文字・数字・「_」「-」で3〜20文字（小文字にして保存）。一意。025 より前からのアカウントは、メールアドレス（小文字）がそのまま入っている |
 | password_hash | text | | | `scrypt$<salt>$<hash>`。パスワードそのものは保存しない |
-| verified_at | timestamptz | ○ | | 確認メールのリンクを開いた日時。NULL = まだ（ログインできない） |
+| recovery_code_hash | text | ○ | | 復旧コードの sha256（025）。コードそのものは保存しない。NULL = まだ作っていない（ID に切り替える前からのアカウント・おためしユーザー） |
 | created_at | timestamptz | | now() | 登録した日時 |
 | display_name | text | ○ | | 表示名（30文字まで）。公開した単語帳に、作った人として出す。NULL = まだ決めていない |
 | onboarding_dismissed_at | timestamptz | ○ | | トップの「はじめの4ステップ」を「閉じる」で消した日時（019）。NULL = まだ閉じていない |
 | guest_expires_at | timestamptz | ○ | | おためしユーザーの期限（022）。この日時を過ぎたら、アカウントごと削除する。NULL = ふつうのユーザー |
 
 - 主キー: `id`
-- インデックス: `users_email_idx`（一意、`lower(email)`）、`users_guest_expires_idx`（`guest_expires_at`、おためしユーザーだけ）
-- おためしユーザーの `email` は `guest-<ランダム>@guest.invalid`（メールは届かない）、`password_hash` はどのパスワードとも合わない値（パスワードではログインできない）
+- インデックス: `users_username_idx`（一意、`username`）、`users_guest_expires_idx`（`guest_expires_at`、おためしユーザーだけ）
+- おためしユーザーの `username` は `guest-<ランダム>`（ふつうの人は「guest」で始まる ID を使えない）、`password_hash` はどのパスワードとも合わない値（パスワードではログインできない）
 
 ## user_sessions
 
@@ -65,23 +65,6 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 - 主キー: `token_hash`
 - 外部キー: `user_id` → `users.id`（ユーザーを消すと消える）
 - インデックス: `user_sessions_user_id_idx`（`user_id`）
-
-## email_tokens
-
-確認メール・パスワード再設定メールのリンクに入れる合言葉。
-
-| 列 | 型 | NULL | 初期値 | 説明 |
-| --- | --- | --- | --- | --- |
-| token_hash | text | | | 合言葉の sha256。値そのものは保存しない |
-| user_id | integer | | | 送った相手 |
-| purpose | text | | | `verify`（登録の確認、24時間有効）/ `reset`（パスワードの再設定、1時間有効） |
-| expires_at | timestamptz | | | 有効期限 |
-| created_at | timestamptz | | now() | 送った日時。再送の間隔（60秒）の判定にも使う |
-
-- 主キー: `token_hash`
-- 外部キー: `user_id` → `users.id`（ユーザーを消すと消える）
-- チェック: `purpose` は `verify` か `reset`
-- インデックス: `email_tokens_user_id_idx`（`user_id, purpose`）
 
 ## passkeys
 
@@ -144,6 +127,20 @@ PostgreSQL 17。全テーブルの全列を書く。テーブル同士の関係�
 
 - 主キー: `day`
 - チェック: `starts >= 0`
+
+
+## signup_starts
+
+登録した記録。同じ接続元から1日に登録できる回数（5回）を数える（[auth.md](auth.md#登録の回数いたずら対策)）。025 で作った。
+
+| 列 | 型 | NULL | 初期値 | 説明 |
+| --- | --- | --- | --- | --- |
+| id | bigint | | 連番 | 主キー |
+| ip_hash | text | | | 接続元（IP アドレス）の sha256。IP アドレスそのものは保存しない |
+| created_at | timestamptz | | now() | 登録した日時。1日たったら、次に登録するときに消す |
+
+- 主キー: `id`
+- インデックス: `signup_starts_ip_idx`（`ip_hash, created_at`）
 
 ## decks
 

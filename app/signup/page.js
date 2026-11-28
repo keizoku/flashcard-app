@@ -1,31 +1,25 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { SignupForm } from "@/app/auth/AuthForms";
-import { isSignupOpen } from "@/lib/allowlist";
 import { getCurrentUser } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: "新規登録 | フラッシュカード" };
 
+// ログイン中に開いても、トップへは移さない。登録するとその場でログインするので、
+// 移してしまうと、復旧コードを見せる前に画面が変わってしまう（フォームの中で「ログインしています」と出す）
 export default async function SignupPage() {
-  if (await getCurrentUser()) redirect("/");
+  const loggedIn = Boolean(await getCurrentUser());
   return (
     <main className="auth-page">
       <h1>新規登録</h1>
-      {!isSignupOpen() && (
-        <p className="error" role="note">
-          今は、決まった人だけが使えます。決まった人のメールアドレスでなければ、登録できません。
-        </p>
-      )}
       <p className="note">
-        メールアドレスに確認メールが届きます。メールのリンクを開くと登録が完了します。
+        ID とパスワードを決めるだけで登録できます。メールアドレスはいりません。
+        登録すると「復旧コード」が出ます。パスワードを忘れたときに必要なので、メモしてください。
       </p>
-      <SignupForm />
+      <SignupForm loggedIn={loggedIn} />
       <ul className="auth-links">
         <li>
           登録済みの方は <Link href="/login">ログイン</Link>
-        </li>
-        <li>
-          確認メールが届かない方は <Link href="/resend">送り直す</Link>
         </li>
       </ul>
     </main>
